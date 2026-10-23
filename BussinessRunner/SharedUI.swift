@@ -275,6 +275,7 @@ struct MentionChip: View {
         case .role: return mention.name
         case .entity: return mention.name
         case .variable: return mention.name
+        case .platform: return mention.name
         }
     }
 
@@ -284,6 +285,7 @@ struct MentionChip: View {
         case .role: return .orange
         case .entity: return .purple
         case .variable: return .teal
+        case .platform: return .indigo
         }
     }
 }

@@ -24,6 +24,7 @@ enum SelfTest {
         try assertExists(temp, "roles.md")
         try assertExists(temp, "rules.md")
         try assertExists(temp, HarnessWriter.environmentsFileName)
+        try assertExists(temp, "platforms.md")
         try assertExists(temp, "status.md")
         try assertExists(temp, "readme.md")
         try assertExists(temp, "versions.md")
@@ -44,9 +45,23 @@ enum SelfTest {
         guard readme.contains("Не указан тип тикета") else {
             throw TestError.message("readme missing ticket-type stop rule")
         }
+        guard readme.contains("Не указана платформа") else {
+            throw TestError.message("readme missing platform stop rule")
+        }
         let versions = try String(contentsOf: temp.appendingPathComponent(".harness/versions.md"), encoding: .utf8)
         guard versions.contains("entity | User | init →") else {
             throw TestError.message("versions.md missing User init hash")
+        }
+        guard versions.contains("platform | web:ui · Next | init →") else {
+            throw TestError.message("versions.md missing platform hash")
+        }
+        let platforms = try String(contentsOf: temp.appendingPathComponent(".harness/platforms.md"), encoding: .utf8)
+        guard platforms.contains("## web:ui"), platforms.contains("Next") else {
+            throw TestError.message("platforms.md missing web:ui")
+        }
+        let mentions = MentionParser.parse("каталог на +web:ui+ для ?User?")
+        guard mentions.contains(where: { $0.kind == .platform && $0.name == "web:ui" }) else {
+            throw TestError.message("parser missed +platform+ mention")
         }
         guard first.newTickets.contains(where: { $0.kind == .process }) else {
             throw TestError.message("first save should create process ticket")
@@ -83,6 +98,30 @@ enum SelfTest {
         let status = try String(contentsOf: temp.appendingPathComponent(".harness/status.md"), encoding: .utf8)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard status == "ACTIVE" else { throw TestError.message("status.md ACTIVE failed") }
+
+        var blocked = project
+        blocked.platforms = []
+        blocked.processes[0].testCases.append("ещё один кейс")
+        do {
+            _ = try HarnessWriter.save(project: blocked)
+            throw TestError.message("save must refuse tickets without a platform")
+        } catch HarnessWriter.HarnessError.noPlatform {
+            // expected
+        }
+
+        let fresh = ProjectFactory.make(name: "без платформы", repoPath: temp.path)
+        do {
+            _ = try HarnessWriter.save(project: fresh)
+            throw TestError.message("first save without platform must refuse User migration ticket")
+        } catch HarnessWriter.HarnessError.noPlatform {
+            // expected
+        }
+        do {
+            try HarnessWriter.requirePlatform(fresh)
+            throw TestError.message("requirePlatform must throw")
+        } catch HarnessWriter.HarnessError.noPlatform {
+            // expected
+        }
     }
 
     private static func assertExists(_ repo: URL, _ name: String) throws {

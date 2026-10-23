@@ -40,6 +40,7 @@ struct ProcessEditorView: View {
                             legend("!роль!", "роль", .orange)
                             legend("?сущность?", "сущность", .purple)
                             legend("\"\"\"env\"\"\"", "переменная", .teal)
+                            legend("+web:ui+", "платформа", .indigo)
                         }
                         .fixedSize(horizontal: false, vertical: true)
                     }

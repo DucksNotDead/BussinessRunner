@@ -15,6 +15,9 @@ enum SnapshotExport {
     static func dump(workspace: Workspace, directory: URL) {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         print("SNAPSHOT start")
+        if workspace.selectedProject == nil || workspace.selectedProject?.platforms.isEmpty == true {
+            workspace.seedDemoIfNeeded()
+        }
         let size = CGSize(width: 1440, height: 900)
 
         workspace.selectedTab = .processes
@@ -32,6 +35,9 @@ enum SnapshotExport {
 
         workspace.selectedTab = .roles
         write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("05-roles.png"))
+
+        workspace.selectedTab = .platforms
+        write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("06-platforms.png"))
 
         print("SNAPSHOT_OK \(directory.path)")
     }

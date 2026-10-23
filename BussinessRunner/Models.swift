@@ -9,10 +9,40 @@ struct EnvVariable: Identifiable, Codable, Equatable, Hashable {
 struct DevEnvironment: Identifiable, Codable, Equatable {
     var id: UUID = UUID()
     var name: String
-    var technologies: String
     var hardware: String
     var variables: [EnvVariable] = []
     var hash: String = ""
+}
+
+enum PlatformKind: String, Codable, CaseIterable, Identifiable {
+    case webAPI = "web:api"
+    case webUI = "web:ui"
+    case ios
+    case android
+    case macos
+    case windows
+
+    var id: String { rawValue }
+
+    var frameworks: [String] {
+        switch self {
+        case .webAPI: return ["Node/Express", "FastAPI", "Django", "Go", "Spring"]
+        case .webUI: return ["React", "Vue", "Svelte", "Next", "Angular"]
+        case .ios: return ["SwiftUI", "UIKit"]
+        case .android: return ["Jetpack Compose", "Views"]
+        case .macos: return ["SwiftUI", "AppKit"]
+        case .windows: return ["WinUI", "WPF"]
+        }
+    }
+}
+
+struct ProjectPlatform: Identifiable, Codable, Equatable {
+    var id: UUID = UUID()
+    var kind: PlatformKind
+    var framework: String
+    var hash: String = ""
+
+    var versionName: String { "\(kind.rawValue) · \(framework)" }
 }
 
 struct EntityField: Identifiable, Codable, Equatable {
@@ -105,6 +135,7 @@ struct Project: Identifiable, Codable, Equatable {
     var repoPath: String
     var githubURL: String = ""
     var environments: [DevEnvironment] = []
+    var platforms: [ProjectPlatform] = []
     var entities: [Entity] = []
     var roles: [Role] = []
     var rules: [UserRule] = []
@@ -117,6 +148,7 @@ struct Project: Identifiable, Codable, Equatable {
 
 enum CanvasTab: String, CaseIterable, Identifiable {
     case environment
+    case platforms
     case entities
     case roles
     case rules
@@ -128,6 +160,7 @@ enum CanvasTab: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .environment: return "Среда"
+        case .platforms: return "Платформы"
         case .entities: return "Сущности"
         case .roles: return "Роли"
         case .rules: return "Правила"
@@ -139,6 +172,7 @@ enum CanvasTab: String, CaseIterable, Identifiable {
     var systemImage: String {
         switch self {
         case .environment: return "cpu"
+        case .platforms: return "laptopcomputer.and.iphone"
         case .entities: return "cylinder.split.1x2"
         case .roles: return "person.2"
         case .rules: return "checkmark.seal"
@@ -153,6 +187,7 @@ enum MentionKind: String {
     case role
     case entity
     case variable
+    case platform
 }
 
 struct Mention: Hashable, Identifiable {
@@ -168,6 +203,7 @@ enum MentionParser {
         collect(#"!([^!\n]+)!"#, in: text, kind: .role, into: &result)
         collect(#"\?([^?\n]+)\?"#, in: text, kind: .entity, into: &result)
         collect(#"\"\"\"([^\"\n]+)\"\"\""#, in: text, kind: .variable, into: &result)
+        collect(#"\+([^\+\n]+)\+"#, in: text, kind: .platform, into: &result)
         return result
     }
 
@@ -188,7 +224,7 @@ enum ProjectFactory {
     static func make(name: String, repoPath: String) -> Project {
         var project = Project(name: name, repoPath: repoPath)
         project.environments = [
-            DevEnvironment(name: "dev", technologies: "", hardware: "")
+            DevEnvironment(name: "dev", hardware: "")
         ]
         project.entities = [makeUser()]
         return project
@@ -214,10 +250,13 @@ enum ProjectFactory {
     static func demoProject(repoPath: String) -> Project {
         var project = make(name: "Демо", repoPath: repoPath)
         project.githubURL = ""
+        project.platforms = [
+            ProjectPlatform(kind: .webUI, framework: "Next"),
+            ProjectPlatform(kind: .webAPI, framework: "Node/Express")
+        ]
         project.environments = [
             DevEnvironment(
                 name: "dev",
-                technologies: "Next.js, PostgreSQL, SwiftUI-админка",
                 hardware: "Mac mini",
                 variables: [
                     EnvVariable(name: "DATABASE_URL", value: "postgres://localhost:5432/dev"),
@@ -255,7 +294,7 @@ enum ProjectFactory {
         let checkout = ProjectProcess(
             name: "Оформление заказа",
             actions: [
-                ProcessAction(text: "Клиент ?User? открывает каталог на _Next.js_."),
+                ProcessAction(text: "Клиент ?User? открывает каталог на +web:ui+."),
                 ProcessAction(text: "Система проверяет остаток ?Product? против \"\"\"STOCK_THRESHOLD\"\"\"."),
                 ProcessAction(text: "Роль !Кассир! подтверждает оплату и создаёт ?Order?.")
             ],

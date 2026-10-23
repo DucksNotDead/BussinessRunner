@@ -16,7 +16,6 @@ struct EnvironmentTab: View {
                                 Spacer()
                                 HashCapsule(hash: env.hash)
                             }
-                            BRField(label: "Технологии", prompt: "стек", text: $env.technologies)
                             BRField(label: "Железо", prompt: "Mac mini", text: $env.hardware)
                             BRField(label: "GitHub URL агента", prompt: "https://github.com/…", text: $project.githubURL)
                             VStack(alignment: .leading, spacing: 10) {

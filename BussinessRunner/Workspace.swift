@@ -175,6 +175,12 @@ final class Workspace: ObservableObject {
 
     func addBug(title: String, body: String, entities: [String]) {
         guard var project = selectedProject, let index = projects.firstIndex(where: { $0.id == project.id }) else { return }
+        do {
+            try HarnessWriter.requirePlatform(project)
+        } catch {
+            saveError = error.localizedDescription
+            return
+        }
         project.tickets.append(Ticket(
             kind: .bug,
             title: title,
@@ -188,6 +194,12 @@ final class Workspace: ObservableObject {
     func launchTicket(_ ticket: Ticket) async {
         agentLaunchMessage = nil
         guard let project = selectedProject else { return }
+        do {
+            try HarnessWriter.requirePlatform(project)
+        } catch {
+            agentLaunchMessage = error.localizedDescription
+            return
+        }
         guard let key = SecretStore.loadAPIKey() else {
             agentLaunchMessage = CursorAPIError.missingKey.localizedDescription
             return

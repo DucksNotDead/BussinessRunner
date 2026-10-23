@@ -16,7 +16,11 @@ enum ContentHash {
             .map { "\($0.name)=\($0.value)" }
             .sorted()
             .joined(separator: "\n")
-        return sha256(["environment", env.name, env.technologies, env.hardware, vars].joined(separator: "\n"))
+        return sha256(["environment", env.name, env.hardware, vars].joined(separator: "\n"))
+    }
+
+    static func platform(_ platform: ProjectPlatform) -> String {
+        sha256(["platform", platform.kind.rawValue, platform.framework].joined(separator: "\n"))
     }
 
     static func entity(_ entity: Entity) -> String {
