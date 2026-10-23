@@ -59,7 +59,7 @@ struct ProcessDiagramView: View {
                     }
                 }
 
-                let mentions = MentionParser.parse(process.actions.map(\.text).joined(separator: "\n"))
+                let mentions = process.actions.flatMap(\.links).map(Mention.init)
                 if !mentions.isEmpty {
                     Text("Impact").font(.subheadline.weight(.semibold))
                     FlexibleMentionRow(mentions: mentions)
@@ -70,7 +70,7 @@ struct ProcessDiagramView: View {
     }
 
     private func diagramNode(index: Int, action: ProcessAction) -> some View {
-        let mentions = MentionParser.parse(action.text)
+        let mentions = action.links.map(Mention.init)
         return VStack(alignment: .leading, spacing: 10) {
             Text("\(index + 1). \(action.text.isEmpty ? "пустое действие" : action.text)")
                 .font(.body)

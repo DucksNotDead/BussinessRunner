@@ -32,7 +32,13 @@ enum ContentHash {
     }
 
     static func process(_ process: ProjectProcess) -> String {
-        let actions = process.actions.map(\.text).joined(separator: "\n")
+        let actions = process.actions.map { action in
+            let links = action.links
+                .map { "\($0.kind.rawValue):\($0.targetID?.uuidString ?? ""):\($0.name)" }
+                .sorted()
+                .joined(separator: ",")
+            return "\(action.text)|\(links)"
+        }.joined(separator: "\n")
         let blocks = process.logicBlocks.map { "\($0.title):\($0.actionIDs.map(\.uuidString).sorted().joined(separator: ","))" }.joined(separator: "\n")
         let nested = process.nestedProcessIDs.map(\.uuidString).sorted().joined(separator: ",")
         let tests = process.testCases.joined(separator: "\n")

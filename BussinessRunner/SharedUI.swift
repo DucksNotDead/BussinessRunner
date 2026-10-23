@@ -278,6 +278,7 @@ struct MentionChip: View {
         case .platform: return .indigo
         case .role: return .orange
         case .entity: return .purple
+        case .variable: return .teal
         }
     }
 }

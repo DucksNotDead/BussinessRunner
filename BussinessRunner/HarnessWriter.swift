@@ -134,8 +134,37 @@ enum HarnessWriter {
             project.rules[i].hash = ContentHash.rule(project.rules[i])
         }
         for i in project.processes.indices {
+            for j in project.processes[i].actions.indices {
+                for k in project.processes[i].actions[j].links.indices {
+                    project.processes[i].actions[j].links[k] = refreshed(project.processes[i].actions[j].links[k], in: project)
+                }
+            }
             project.processes[i].hash = ContentHash.process(project.processes[i])
         }
+    }
+
+    private static func refreshed(_ link: ActionLink, in project: Project) -> ActionLink {
+        var next = link
+        switch link.kind {
+        case .platform:
+            if let platform = project.platforms.first(where: { $0.id == link.targetID }) {
+                next.name = platform.kind.rawValue
+                next.hash = platform.hash
+            }
+        case .role:
+            if let role = project.roles.first(where: { $0.id == link.targetID }) {
+                next.name = role.name
+                next.hash = role.hash
+            }
+        case .entity:
+            if let entity = project.entities.first(where: { $0.id == link.targetID }) {
+                next.name = entity.name
+                next.hash = entity.hash
+            }
+        case .variable:
+            break
+        }
+        return next
     }
 
     private static func record(type: String, previous: [String: String], current: [String: String], at now: Date, into versions: inout [VersionRecord]) {
@@ -214,9 +243,9 @@ enum HarnessWriter {
     private static func affectedProcessNames(project: Project, entities: [String]) -> [String] {
         let entitySet = Set(entities)
         return project.processes.filter { process in
-            let blob = process.actions.map(\.text).joined(separator: "\n")
-            let mentions = MentionParser.parse(blob)
-            return mentions.contains(where: { $0.kind == .entity && entitySet.contains($0.name) })
+            process.actions.contains { action in
+                action.links.contains { $0.kind == .entity && entitySet.contains($0.name) }
+            }
         }.map(\.name)
     }
 
@@ -321,12 +350,13 @@ enum HarnessWriter {
             }
         }
         md += "## Упоминания\n\n"
-        let mentions = MentionParser.parse(process.actions.map(\.text).joined(separator: "\n"))
-        if mentions.isEmpty {
+        let links = process.actions.flatMap(\.links)
+        if links.isEmpty {
             md += "Нет.\n\n"
         } else {
-            for mention in mentions {
-                md += "- \(mention.kind.rawValue): \(mention.name)\n"
+            for link in links {
+                let target = link.targetID?.uuidString ?? "—"
+                md += "- \(link.kind.rawValue): \(link.name) id=`\(target)` хеш=`\(link.hash)`\n"
             }
             md += "\n"
         }

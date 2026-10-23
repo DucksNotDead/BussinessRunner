@@ -3,6 +3,7 @@ import SwiftUI
 struct ProcessEditorView: View {
     @Binding var process: ProjectProcess
     @Binding var project: Project
+    @EnvironmentObject private var workspace: Workspace
 
     var body: some View {
         HSplitView {
@@ -36,9 +37,10 @@ struct ProcessEditorView: View {
                         Text("Упоминания")
                             .font(.subheadline.weight(.semibold))
                         HStack(spacing: 8) {
-                            legend("_web:ui_", "платформа", .indigo)
-                            legend("!роль!", "роль", .orange)
-                            legend("?сущность?", "сущность", .purple)
+                            legend("_", "платформа", .indigo)
+                            legend("!", "роль", .orange)
+                            legend("?", "сущность", .purple)
+                            legend("\"\"\"", "переменная", .teal)
                         }
                         .fixedSize(horizontal: false, vertical: true)
                     }
@@ -53,11 +55,11 @@ struct ProcessEditorView: View {
                                     .font(.headline)
                                     .foregroundStyle(.secondary)
                                     .frame(width: 22)
-                                TextField("действие", text: $process.actions[index].text, axis: .vertical)
-                                    .textFieldStyle(.plain)
-                                    .lineLimit(2...4)
-                                    .padding(10)
-                                    .brSurface(radius: 14, interactive: false)
+                                ActionMentionField(
+                                    action: $process.actions[index],
+                                    project: project,
+                                    forceKind: index == 0 ? workspace.snapshotMentionKind : nil
+                                )
                                 IconCircleButton(systemName: "xmark", role: .destructive) {
                                     process.actions.remove(at: index)
                                 }

@@ -17,6 +17,7 @@ final class Workspace: ObservableObject {
     @Published var saveError: String?
     @Published var presentBugSheet = false
     @Published var agentLaunchMessage: String?
+    @Published var snapshotMentionKind: MentionKind?
 
     private let api = CursorAPI()
     private let persistURL: URL

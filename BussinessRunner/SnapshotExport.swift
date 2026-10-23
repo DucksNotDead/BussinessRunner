@@ -24,6 +24,10 @@ enum SnapshotExport {
         workspace.editingProcessID = workspace.selectedProject?.processes.first?.id
         write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("01-process-editor.png"))
 
+        workspace.snapshotMentionKind = .platform
+        write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("07-mention-search.png"))
+        workspace.snapshotMentionKind = nil
+
         workspace.selectedTab = .platforms
         write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("06-platforms.png"))
 

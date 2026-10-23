@@ -65,9 +65,28 @@ enum SelfTest {
         guard platforms.contains("## web:ui"), platforms.contains("Next") else {
             throw TestError.message("platforms.md missing web:ui")
         }
-        let mentions = MentionParser.parse("каталог на _web:ui_ для ?User?")
-        guard mentions.contains(where: { $0.kind == .platform && $0.name == "web:ui" }) else {
-            throw TestError.message("parser missed _platform_ mention")
+        guard MentionScan.activeToken(in: "каталог _web")?.kind == .platform else {
+            throw TestError.message("_ should open platform search")
+        }
+        guard MentionScan.activeToken(in: "роль !кас")?.kind == .role else {
+            throw TestError.message("! should open role search")
+        }
+        guard MentionScan.activeToken(in: "сущность ?Us")?.kind == .entity else {
+            throw TestError.message("? should open entity search")
+        }
+        guard MentionScan.activeToken(in: "env \"\"\"STOCK")?.kind == .variable else {
+            throw TestError.message("\"\"\" should open variable insert")
+        }
+        guard MentionScan.activeToken(in: "каталог на web:ui.") == nil else {
+            throw TestError.message("wrap-markup must not be treated as a mention")
+        }
+        let demoLinks = first.project.processes[0].actions.flatMap(\.links)
+        guard demoLinks.contains(where: { $0.kind == .platform && $0.name == "web:ui" && $0.targetID != nil && !$0.hash.isEmpty }) else {
+            throw TestError.message("action should store platform link with id/hash")
+        }
+        let feature = try String(contentsOf: temp.appendingPathComponent(".harness/features/Оформление заказа.md"), encoding: .utf8)
+        guard feature.contains("platform: web:ui"), feature.contains("id=`"), feature.contains("хеш=`") else {
+            throw TestError.message("feature markdown missing stored mention id/hash")
         }
         guard first.newTickets.contains(where: { $0.kind == .process }) else {
             throw TestError.message("first save should create process ticket")

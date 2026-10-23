@@ -59,9 +59,18 @@ struct UserRule: Identifiable, Codable, Equatable {
     var hash: String = ""
 }
 
+struct ActionLink: Identifiable, Codable, Equatable, Hashable {
+    var id: UUID = UUID()
+    var kind: MentionKind
+    var targetID: UUID?
+    var name: String
+    var hash: String = ""
+}
+
 struct ProcessAction: Identifiable, Codable, Equatable {
     var id: UUID = UUID()
     var text: String
+    var links: [ActionLink] = []
 }
 
 struct LogicBlock: Identifiable, Codable, Equatable {
@@ -164,37 +173,89 @@ enum CanvasTab: String, CaseIterable, Identifiable {
     }
 }
 
-enum MentionKind: String {
+enum MentionKind: String, Codable, CaseIterable {
     case platform
     case role
     case entity
+    case variable
+
+    var trigger: String {
+        switch self {
+        case .platform: return "_"
+        case .role: return "!"
+        case .entity: return "?"
+        case .variable: return "\"\"\""
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .platform: return "Платформа"
+        case .role: return "Роль"
+        case .entity: return "Сущность"
+        case .variable: return "Переменная"
+        }
+    }
 }
 
 struct Mention: Hashable, Identifiable {
     var kind: MentionKind
     var name: String
-    var id: String { "\(kind.rawValue):\(name)" }
-}
+    var hash: String = ""
+    var id: String { "\(kind.rawValue):\(name):\(hash)" }
 
-enum MentionParser {
-    static func parse(_ text: String) -> [Mention] {
-        var result: [Mention] = []
-        collect(#"_([^_\n]+)_"#, in: text, kind: .platform, into: &result)
-        collect(#"!([^!\n]+)!"#, in: text, kind: .role, into: &result)
-        collect(#"\?([^?\n]+)\?"#, in: text, kind: .entity, into: &result)
-        return result
+    init(kind: MentionKind, name: String, hash: String = "") {
+        self.kind = kind
+        self.name = name
+        self.hash = hash
     }
 
-    private static func collect(_ pattern: String, in text: String, kind: MentionKind, into result: inout [Mention]) {
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return }
-        let range = NSRange(text.startIndex..., in: text)
-        for match in regex.matches(in: text, range: range) {
-            guard match.numberOfRanges > 1, let swiftRange = Range(match.range(at: 1), in: text) else { continue }
-            let name = String(text[swiftRange]).trimmingCharacters(in: .whitespacesAndNewlines)
-            if !name.isEmpty {
-                result.append(Mention(kind: kind, name: name))
-            }
+    init(_ link: ActionLink) {
+        kind = link.kind
+        name = link.name
+        hash = link.hash
+    }
+}
+
+enum MentionScan {
+    struct Token {
+        var kind: MentionKind
+        var query: String
+        var start: String.Index
+    }
+
+    static func activeToken(in text: String) -> Token? {
+        let start: String.Index
+        if let space = text.lastIndex(where: { $0.isWhitespace || $0 == "\n" }) {
+            start = text.index(after: space)
+        } else {
+            start = text.startIndex
         }
+        let token = String(text[start...])
+        if token.hasPrefix("\"\"\"") {
+            return Token(kind: .variable, query: String(token.dropFirst(3)), start: start)
+        }
+        if token.hasPrefix("_") {
+            return Token(kind: .platform, query: String(token.dropFirst()), start: start)
+        }
+        if token.hasPrefix("!") {
+            return Token(kind: .role, query: String(token.dropFirst()), start: start)
+        }
+        if token.hasPrefix("?") {
+            return Token(kind: .entity, query: String(token.dropFirst()), start: start)
+        }
+        return nil
+    }
+
+    static func insert(label: String, replacing token: Token?, in text: String) -> String {
+        let prefix: String
+        if let token {
+            prefix = String(text[..<token.start])
+        } else {
+            prefix = text
+        }
+        let needsSpace = !prefix.isEmpty && !prefix.hasSuffix(" ") && !prefix.hasSuffix("\n")
+        return prefix + (needsSpace ? " " : "") + label + " "
     }
 }
 
@@ -225,43 +286,57 @@ enum ProjectFactory {
     static func demoProject(repoPath: String) -> Project {
         var project = make(name: "Демо", repoPath: repoPath)
         project.githubURL = ""
-        project.platforms = [
-            ProjectPlatform(kind: .webUI, framework: "Next"),
-            ProjectPlatform(kind: .webAPI, framework: "Node/Express")
-        ]
-        project.entities = [
-            makeUser(),
-            Entity(
-                name: "Product",
-                fields: [
-                    EntityField(name: "id", type: "UUID"),
-                    EntityField(name: "title", type: "String"),
-                    EntityField(name: "stock", type: "Int")
-                ],
-                relations: "Product принадлежит каталогу; заказ ссылается на Product"
-            ),
-            Entity(
-                name: "Order",
-                fields: [
-                    EntityField(name: "id", type: "UUID"),
-                    EntityField(name: "userId", type: "UUID"),
-                    EntityField(name: "status", type: "String")
-                ],
-                relations: "Order → User, Order → Product"
-            )
-        ]
-        project.roles = [
-            Role(name: "Кассир", description: "Подтверждает оплату на точке")
-        ]
+        let webUI = ProjectPlatform(kind: .webUI, framework: "Next")
+        let webAPI = ProjectPlatform(kind: .webAPI, framework: "Node/Express")
+        project.platforms = [webUI, webAPI]
+        let user = makeUser()
+        let product = Entity(
+            name: "Product",
+            fields: [
+                EntityField(name: "id", type: "UUID"),
+                EntityField(name: "title", type: "String"),
+                EntityField(name: "stock", type: "Int")
+            ],
+            relations: "Product принадлежит каталогу; заказ ссылается на Product"
+        )
+        let order = Entity(
+            name: "Order",
+            fields: [
+                EntityField(name: "id", type: "UUID"),
+                EntityField(name: "userId", type: "UUID"),
+                EntityField(name: "status", type: "String")
+            ],
+            relations: "Order → User, Order → Product"
+        )
+        project.entities = [user, product, order]
+        let cashier = Role(name: "Кассир", description: "Подтверждает оплату на точке")
+        project.roles = [cashier]
         project.rules = [
             UserRule(name: "Сток", body: "Не продавать товар с stock ниже STOCK_THRESHOLD без явного подтверждения.")
         ]
         let checkout = ProjectProcess(
             name: "Оформление заказа",
             actions: [
-                ProcessAction(text: "Клиент ?User? открывает каталог на _web:ui_."),
-                ProcessAction(text: "Система проверяет остаток ?Product?."),
-                ProcessAction(text: "Роль !Кассир! подтверждает оплату и создаёт ?Order?.")
+                ProcessAction(
+                    text: "Клиент User открывает каталог на web:ui.",
+                    links: [
+                        ActionLink(kind: .entity, targetID: user.id, name: "User"),
+                        ActionLink(kind: .platform, targetID: webUI.id, name: "web:ui")
+                    ]
+                ),
+                ProcessAction(
+                    text: "Система проверяет остаток Product.",
+                    links: [
+                        ActionLink(kind: .entity, targetID: product.id, name: "Product")
+                    ]
+                ),
+                ProcessAction(
+                    text: "Роль Кассир подтверждает оплату и создаёт Order.",
+                    links: [
+                        ActionLink(kind: .role, targetID: cashier.id, name: "Кассир"),
+                        ActionLink(kind: .entity, targetID: order.id, name: "Order")
+                    ]
+                )
             ],
             logicBlocks: [
                 LogicBlock(title: "Если сток ниже порога")
