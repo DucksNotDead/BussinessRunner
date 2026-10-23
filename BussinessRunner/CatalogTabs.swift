@@ -1,58 +1,5 @@
 import SwiftUI
 
-struct EnvironmentTab: View {
-    @Binding var project: Project
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                ForEach($project.environments) { $env in
-                    GlassCard {
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack {
-                                TextField("dev", text: $env.name)
-                                    .font(.title2.weight(.semibold))
-                                    .textFieldStyle(.plain)
-                                Spacer()
-                                HashCapsule(hash: env.hash)
-                            }
-                            BRField(label: "Железо", prompt: "Mac mini", text: $env.hardware)
-                            BRField(label: "GitHub URL агента", prompt: "https://github.com/…", text: $project.githubURL)
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Переменные окружения")
-                                    .font(.subheadline.weight(.semibold))
-                                ForEach($env.variables) { $variable in
-                                    HStack(spacing: 8) {
-                                        TextField("NAME", text: $variable.name)
-                                            .textFieldStyle(.plain)
-                                            .font(.body.monospaced())
-                                            .padding(10)
-                                            .brSurface(radius: BR.field, interactive: false)
-                                        TextField("value", text: $variable.value)
-                                            .textFieldStyle(.plain)
-                                            .padding(10)
-                                            .brSurface(radius: BR.field, interactive: false)
-                                        IconCircleButton(systemName: "xmark", role: .destructive) {
-                                            env.variables.removeAll { $0.id == variable.id }
-                                        }
-                                    }
-                                }
-                                Button {
-                                    env.variables.append(EnvVariable(name: "", value: ""))
-                                } label: {
-                                    Label("Переменная", systemImage: "plus")
-                                }
-                                .brGlass()
-                            }
-                        }
-                    }
-                }
-            }
-            .padding(28)
-        }
-    }
-}
-
 struct EntitiesTab: View {
     @Binding var project: Project
 

@@ -9,7 +9,7 @@ struct TicketsTab: View {
             VStack(alignment: .leading, spacing: 18) {
                 if project.tickets.isEmpty {
                     GlassCard {
-                        EmptyHint(text: "Пока пусто. Save процесса создаст process, сдвиг сущностей или env — migration.")
+                        EmptyHint(text: "Пока пусто. Save процесса создаст process, сдвиг сущностей — migration.")
                     }
                 } else {
                     ForEach(project.tickets.sorted(by: { $0.createdAt > $1.createdAt })) { ticket in
@@ -31,17 +31,10 @@ struct TicketsTab: View {
                                     .font(.callout)
                                     .foregroundStyle(.secondary)
                                     .lineLimit(5)
-                                HStack(spacing: 8) {
-                                    if !ticket.affectedEntities.isEmpty {
-                                        Label(ticket.affectedEntities.joined(separator: ", "), systemImage: "cylinder.split.1x2")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    if !ticket.affectedEnvVars.isEmpty {
-                                        Label(ticket.affectedEnvVars.joined(separator: ", "), systemImage: "key")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
+                                if !ticket.affectedEntities.isEmpty {
+                                    Label(ticket.affectedEntities.joined(separator: ", "), systemImage: "cylinder.split.1x2")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
                                 }
                             }
                         }

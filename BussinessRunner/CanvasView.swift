@@ -14,8 +14,6 @@ struct CanvasView: View {
     private var tabBody: some View {
         if let binding = workspace.selectedProjectBinding {
             switch workspace.selectedTab {
-            case .environment:
-                EnvironmentTab(project: binding)
             case .platforms:
                 PlatformsTab(project: binding)
             case .entities:
@@ -60,7 +58,6 @@ struct CanvasView: View {
 
     private var addHelp: String {
         switch workspace.selectedTab {
-        case .environment: return "Добавить среду"
         case .platforms: return "Добавить платформу"
         case .entities: return "Добавить сущность"
         case .roles: return "Добавить роль"
@@ -73,10 +70,6 @@ struct CanvasView: View {
     private func addInCurrentTab() {
         guard var project = workspace.selectedProject else { return }
         switch workspace.selectedTab {
-        case .environment:
-            project.environments.append(
-                DevEnvironment(name: "dev-\(project.environments.count + 1)", hardware: "")
-            )
         case .platforms:
             let used = Set(project.platforms.map(\.kind))
             let kind = PlatformKind.allCases.first { !used.contains($0) } ?? .webUI

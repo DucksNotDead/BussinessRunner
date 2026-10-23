@@ -270,22 +270,14 @@ struct MentionChip: View {
     }
 
     private var label: String {
-        switch mention.kind {
-        case .technology: return mention.name
-        case .role: return mention.name
-        case .entity: return mention.name
-        case .variable: return mention.name
-        case .platform: return mention.name
-        }
+        mention.name
     }
 
     private var color: Color {
         switch mention.kind {
-        case .technology: return .blue
+        case .platform: return .indigo
         case .role: return .orange
         case .entity: return .purple
-        case .variable: return .teal
-        case .platform: return .indigo
         }
     }
 }

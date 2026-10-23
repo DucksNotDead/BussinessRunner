@@ -1,19 +1,5 @@
 import Foundation
 
-struct EnvVariable: Identifiable, Codable, Equatable, Hashable {
-    var id: UUID = UUID()
-    var name: String
-    var value: String
-}
-
-struct DevEnvironment: Identifiable, Codable, Equatable {
-    var id: UUID = UUID()
-    var name: String
-    var hardware: String
-    var variables: [EnvVariable] = []
-    var hash: String = ""
-}
-
 enum PlatformKind: String, Codable, CaseIterable, Identifiable {
     case webAPI = "web:api"
     case webUI = "web:ui"
@@ -134,7 +120,6 @@ struct Project: Identifiable, Codable, Equatable {
     var name: String
     var repoPath: String
     var githubURL: String = ""
-    var environments: [DevEnvironment] = []
     var platforms: [ProjectPlatform] = []
     var entities: [Entity] = []
     var roles: [Role] = []
@@ -147,7 +132,6 @@ struct Project: Identifiable, Codable, Equatable {
 }
 
 enum CanvasTab: String, CaseIterable, Identifiable {
-    case environment
     case platforms
     case entities
     case roles
@@ -159,7 +143,6 @@ enum CanvasTab: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .environment: return "Среда"
         case .platforms: return "Платформы"
         case .entities: return "Сущности"
         case .roles: return "Роли"
@@ -171,7 +154,6 @@ enum CanvasTab: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
-        case .environment: return "cpu"
         case .platforms: return "laptopcomputer.and.iphone"
         case .entities: return "cylinder.split.1x2"
         case .roles: return "person.2"
@@ -183,11 +165,9 @@ enum CanvasTab: String, CaseIterable, Identifiable {
 }
 
 enum MentionKind: String {
-    case technology
+    case platform
     case role
     case entity
-    case variable
-    case platform
 }
 
 struct Mention: Hashable, Identifiable {
@@ -199,11 +179,9 @@ struct Mention: Hashable, Identifiable {
 enum MentionParser {
     static func parse(_ text: String) -> [Mention] {
         var result: [Mention] = []
-        collect(#"_([^_\n]+)_"#, in: text, kind: .technology, into: &result)
+        collect(#"_([^_\n]+)_"#, in: text, kind: .platform, into: &result)
         collect(#"!([^!\n]+)!"#, in: text, kind: .role, into: &result)
         collect(#"\?([^?\n]+)\?"#, in: text, kind: .entity, into: &result)
-        collect(#"\"\"\"([^\"\n]+)\"\"\""#, in: text, kind: .variable, into: &result)
-        collect(#"\+([^\+\n]+)\+"#, in: text, kind: .platform, into: &result)
         return result
     }
 
@@ -223,9 +201,6 @@ enum MentionParser {
 enum ProjectFactory {
     static func make(name: String, repoPath: String) -> Project {
         var project = Project(name: name, repoPath: repoPath)
-        project.environments = [
-            DevEnvironment(name: "dev", hardware: "")
-        ]
         project.entities = [makeUser()]
         return project
     }
@@ -253,16 +228,6 @@ enum ProjectFactory {
         project.platforms = [
             ProjectPlatform(kind: .webUI, framework: "Next"),
             ProjectPlatform(kind: .webAPI, framework: "Node/Express")
-        ]
-        project.environments = [
-            DevEnvironment(
-                name: "dev",
-                hardware: "Mac mini",
-                variables: [
-                    EnvVariable(name: "DATABASE_URL", value: "postgres://localhost:5432/dev"),
-                    EnvVariable(name: "STOCK_THRESHOLD", value: "3")
-                ]
-            )
         ]
         project.entities = [
             makeUser(),
@@ -294,8 +259,8 @@ enum ProjectFactory {
         let checkout = ProjectProcess(
             name: "Оформление заказа",
             actions: [
-                ProcessAction(text: "Клиент ?User? открывает каталог на +web:ui+."),
-                ProcessAction(text: "Система проверяет остаток ?Product? против \"\"\"STOCK_THRESHOLD\"\"\"."),
+                ProcessAction(text: "Клиент ?User? открывает каталог на _web:ui_."),
+                ProcessAction(text: "Система проверяет остаток ?Product?."),
                 ProcessAction(text: "Роль !Кассир! подтверждает оплату и создаёт ?Order?.")
             ],
             logicBlocks: [

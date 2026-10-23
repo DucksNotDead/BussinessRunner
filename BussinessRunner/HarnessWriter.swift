@@ -9,7 +9,6 @@ struct SaveResult {
 
 enum HarnessWriter {
     static let harnessDirectory = ".harness"
-    static let environmentsFileName = "enviroments.md"
 
     static func save(project incoming: Project, now: Date = Date()) throws -> SaveResult {
         var project = incoming
@@ -23,7 +22,6 @@ enum HarnessWriter {
         let current = Snapshot(project: project)
 
         var newVersions: [VersionRecord] = []
-        record(type: "environment", previous: previous.environments, current: current.environments, at: now, into: &newVersions)
         record(type: "platform", previous: previous.platforms, current: current.platforms, at: now, into: &newVersions)
         record(type: "entity", previous: previous.entities, current: current.entities, at: now, into: &newVersions)
         record(type: "role", previous: previous.roles, current: current.roles, at: now, into: &newVersions)
@@ -51,7 +49,6 @@ enum HarnessWriter {
         try write(entitiesMarkdown(project), to: harness.appendingPathComponent("entities.md"), relative: ".harness/entities.md", into: &written)
         try write(rolesMarkdown(project), to: harness.appendingPathComponent("roles.md"), relative: ".harness/roles.md", into: &written)
         try write(rulesMarkdown(project), to: harness.appendingPathComponent("rules.md"), relative: ".harness/rules.md", into: &written)
-        try write(environmentsMarkdown(project), to: harness.appendingPathComponent(environmentsFileName), relative: ".harness/\(environmentsFileName)", into: &written)
         try write(platformsMarkdown(project), to: harness.appendingPathComponent("platforms.md"), relative: ".harness/platforms.md", into: &written)
         try write(statusMarkdown(project), to: harness.appendingPathComponent("status.md"), relative: ".harness/status.md", into: &written)
         try write(readmeMarkdown(), to: harness.appendingPathComponent("readme.md"), relative: ".harness/readme.md", into: &written)
@@ -68,9 +65,11 @@ enum HarnessWriter {
             }
         }
 
-        let migrations = harness.appendingPathComponent("migrations.md")
-        if FileManager.default.fileExists(atPath: migrations.path) {
-            try FileManager.default.removeItem(at: migrations)
+        for leftoverName in ["migrations.md", "enviroments.md"] {
+            let leftover = harness.appendingPathComponent(leftoverName)
+            if FileManager.default.fileExists(atPath: leftover.path) {
+                try FileManager.default.removeItem(at: leftover)
+            }
         }
 
         let rulesDir = root.appendingPathComponent(".cursor/rules", isDirectory: true)
@@ -97,16 +96,13 @@ enum HarnessWriter {
     // MARK: - Hash / diff
 
     private struct Snapshot {
-        var environments: [String: String]
         var platforms: [String: String]
         var entities: [String: String]
         var roles: [String: String]
         var rules: [String: String]
         var processes: [String: String]
-        var envVars: [String: String]
 
         init(project: Project) {
-            environments = Dictionary(uniqueKeysWithValues: project.environments.map { ($0.name, $0.hash) })
             var platformHashes: [String: String] = [:]
             var seen: [String: Int] = [:]
             for platform in project.platforms {
@@ -121,20 +117,10 @@ enum HarnessWriter {
             roles = Dictionary(uniqueKeysWithValues: project.roles.map { ($0.name, $0.hash) })
             rules = Dictionary(uniqueKeysWithValues: project.rules.map { ($0.name, $0.hash) })
             processes = Dictionary(uniqueKeysWithValues: project.processes.map { ($0.name, $0.hash) })
-            var vars: [String: String] = [:]
-            for env in project.environments {
-                for variable in env.variables {
-                    vars["\(env.name).\(variable.name)"] = variable.value
-                }
-            }
-            envVars = vars
         }
     }
 
     private static func rehash(_ project: inout Project) {
-        for i in project.environments.indices {
-            project.environments[i].hash = ContentHash.environment(project.environments[i])
-        }
         for i in project.platforms.indices {
             project.platforms[i].hash = ContentHash.platform(project.platforms[i])
         }
@@ -198,51 +184,39 @@ enum HarnessWriter {
         for name in entityNames.sorted() where previous.entities[name] != current.entities[name] {
             changedEntities.append(name)
         }
-        var changedVars: [String] = []
-        let varNames = Set(previous.envVars.keys).union(current.envVars.keys)
-        for name in varNames.sorted() where previous.envVars[name] != current.envVars[name] {
-            changedVars.append(name)
-        }
-        if changedEntities.isEmpty && changedVars.isEmpty { return [] }
+        if changedEntities.isEmpty { return [] }
         tickets.append(Ticket(
             kind: .migration,
-            title: "migration: модель данных / env",
-            body: migrationBody(entities: changedEntities, envVars: changedVars, project: project),
+            title: "migration: модель данных",
+            body: migrationBody(entities: changedEntities, project: project),
             affectedEntities: changedEntities,
-            affectedEnvVars: changedVars,
             createdAt: now
         ))
         return tickets
     }
 
-    private static func migrationBody(entities: [String], envVars: [String], project: Project) -> String {
+    private static func migrationBody(entities: [String], project: Project) -> String {
         var lines = [
             "Тип тикета: migration.",
             "Исполнитель не пишет /.harness/*.",
-            "Критерии: entities.md = БД dev-environment агента; env vars dev-environment = enviroments.md; тесты затронутых процессов; in-session сборка."
+            "Критерии: entities.md = БД агента; тесты затронутых процессов; in-session сборка."
         ]
         if !entities.isEmpty {
             lines.append("Сущности: " + entities.joined(separator: ", "))
         }
-        if !envVars.isEmpty {
-            lines.append("Env vars: " + envVars.joined(separator: ", "))
-        }
-        let touched = affectedProcessNames(project: project, entities: entities, envVars: envVars)
+        let touched = affectedProcessNames(project: project, entities: entities)
         if !touched.isEmpty {
             lines.append("Процессы: " + touched.joined(separator: ", "))
         }
         return lines.joined(separator: "\n")
     }
 
-    private static func affectedProcessNames(project: Project, entities: [String], envVars: [String]) -> [String] {
+    private static func affectedProcessNames(project: Project, entities: [String]) -> [String] {
         let entitySet = Set(entities)
-        let varShort = Set(envVars.map { $0.split(separator: ".").last.map(String.init) ?? $0 })
         return project.processes.filter { process in
             let blob = process.actions.map(\.text).joined(separator: "\n")
             let mentions = MentionParser.parse(blob)
-            if mentions.contains(where: { $0.kind == .entity && entitySet.contains($0.name) }) { return true }
-            if mentions.contains(where: { $0.kind == .variable && varShort.contains($0.name) }) { return true }
-            return false
+            return mentions.contains(where: { $0.kind == .entity && entitySet.contains($0.name) })
         }.map(\.name)
     }
 
@@ -293,25 +267,6 @@ enum HarnessWriter {
             md += "## \(rule.name)\n\n"
             md += "- хеш: `\(rule.hash)`\n\n"
             md += "\(rule.body)\n\n"
-        }
-        return md
-    }
-
-    private static func environmentsMarkdown(_ project: Project) -> String {
-        var md = "# Среды\n\nИмя файла зафиксировано как `enviroments.md`.\n\n"
-        for env in project.environments {
-            md += "## \(env.name)\n\n"
-            md += "- хеш: `\(env.hash)`\n"
-            md += "- железо: \(env.hardware.isEmpty ? "—" : env.hardware)\n"
-            if env.variables.isEmpty {
-                md += "- переменные окружения: нет\n\n"
-            } else {
-                md += "- переменные окружения:\n"
-                for variable in env.variables {
-                    md += "  - `\(variable.name)` = `\(variable.value)`\n"
-                }
-                md += "\n"
-            }
         }
         return md
     }
@@ -417,16 +372,17 @@ enum HarnessWriter {
         1. Менять `/.harness/*` **строго запрещено**. Harness пишет только платформа BussinessRunner.
         2. Если в промпте не указан тип тикета (`process` / `bug` / `migration`) — остановиться и вернуть ровно: `Не указан тип тикета`.
         3. Если платформа не указана (`/.harness/platforms.md` без платформ) — остановиться и вернуть ровно: `Не указана платформа`.
-        4. Перед работой прочитать `/.harness/status.md`. Если там `ACTIVE` — ждать, пока закончится другой тикет.
-        5. Каждый блок кода в комментариях связан с процессом и/или environment **именем и хешем**, понятным машине и человеку. Смена хеша → обновить комментарии в том же тикете.
-        6. Перед исполнением тикета сверить `/.harness/entities.md` с БД **dev-environment, в котором работает агент**. При расхождении привести эту БД к `/.harness/entities.md` (документация побеждает).
-        7. Каждый созданный процесс покрыт тест-кейсами из `/.harness/features/{имя процесса}.md`.
-        8. Критерии приёмки процесса проверяет **не** тот агент, который его реализовывал, а второй прогон Cursor.
-        9. **Тикет bug** успешен только если: проходят все тесты затронутых процессов (любое касание code block'ов, связанных с другими процессами, тоже входит); проблема из промпта решена; in-session сборка всех затронутых систем проходит.
-        10. **Тикет process** (добавить / удалить / изменить процесс) успешен только если: проходят все тесты затронутых процессов (то же правило связанных code block'ов); выполнены все критерии приёмки этого процесса; in-session сборка всех затронутых систем проходит. Критически важный процесс меняется тем же типом `process` и теми же правилами успеха.
-        11. **Тикет migration** (сущности и/или env vars): БД = `entities.md`, env vars dev-environment = сохранённые в `enviroments.md`, тесты процессов, которые трогают изменения, сборка затронутых систем. Файла `migrations.md` нет.
-        12. Если в ходе исполнения или ревью описание процесса неполное (нет тестов, нет приёмки или нет самого процесса) или неверное (нет нужных связей) — остановить изменения и вернуть, что именно не так.
-        13. Следовать `/.harness/rules.md` только там, где они **не противоречат** `/.harness/readme.md`.
+        4. Целевой проект собирается по платформам. Код лежит в `<корень репозитория>/platforms/<platform>/`, где `<platform>` — одно из: `web:api`, `web:ui`, `ios`, `android`, `macos`, `windows`. Кодирующий агент пишет **только** в папку платформы тикета. Файлы вне `platforms/<platform>/` не трогать.
+        5. Перед работой прочитать `/.harness/status.md`. Если там `ACTIVE` — ждать, пока закончится другой тикет.
+        6. Каждый блок кода в комментариях связан с процессом и/или платформой **именем и хешем**, понятным машине и человеку. Смена хеша → обновить комментарии в том же тикете.
+        7. Перед исполнением тикета сверить `/.harness/entities.md` с БД агента. При расхождении привести БД к `/.harness/entities.md` (документация побеждает).
+        8. Каждый созданный процесс покрыт тест-кейсами из `/.harness/features/{имя процесса}.md`.
+        9. Критерии приёмки процесса проверяет **не** тот агент, который его реализовывал, а второй прогон Cursor.
+        10. **Тикет bug** успешен только если: проходят все тесты затронутых процессов (любое касание code block'ов, связанных с другими процессами, тоже входит); проблема из промпта решена; in-session сборка всех затронутых систем проходит.
+        11. **Тикет process** (добавить / удалить / изменить процесс) успешен только если: проходят все тесты затронутых процессов (то же правило связанных code block'ов); выполнены все критерии приёмки этого процесса; in-session сборка всех затронутых систем проходит. Критически важный процесс меняется тем же типом `process` и теми же правилами успеха.
+        12. **Тикет migration** (изменение сущностей): БД = `entities.md`, тесты процессов, которые трогают изменения, сборка затронутых систем. Файла `migrations.md` нет. Файла `enviroments.md` нет.
+        13. Если в ходе исполнения или ревью описание процесса неполное (нет тестов, нет приёмки или нет самого процесса) или неверное (нет нужных связей) — остановить изменения и вернуть, что именно не так.
+        14. Следовать `/.harness/rules.md` только там, где они **не противоречат** `/.harness/readme.md`.
 
         Вложенный процесс: его тесты входят в «затронутые», если тронуты его code block'и.
         """

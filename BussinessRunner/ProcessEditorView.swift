@@ -36,11 +36,9 @@ struct ProcessEditorView: View {
                         Text("Упоминания")
                             .font(.subheadline.weight(.semibold))
                         HStack(spacing: 8) {
-                            legend("_стек_", "технология", .blue)
+                            legend("_web:ui_", "платформа", .indigo)
                             legend("!роль!", "роль", .orange)
                             legend("?сущность?", "сущность", .purple)
-                            legend("\"\"\"env\"\"\"", "переменная", .teal)
-                            legend("+web:ui+", "платформа", .indigo)
                         }
                         .fixedSize(horizontal: false, vertical: true)
                     }

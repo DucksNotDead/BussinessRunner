@@ -23,7 +23,6 @@ enum SelfTest {
         try assertExists(temp, "entities.md")
         try assertExists(temp, "roles.md")
         try assertExists(temp, "rules.md")
-        try assertExists(temp, HarnessWriter.environmentsFileName)
         try assertExists(temp, "platforms.md")
         try assertExists(temp, "status.md")
         try assertExists(temp, "readme.md")
@@ -37,6 +36,10 @@ enum SelfTest {
         if FileManager.default.fileExists(atPath: migrations.path) {
             throw TestError.message("migrations.md must not exist")
         }
+        let enviroments = temp.appendingPathComponent(".harness/enviroments.md")
+        if FileManager.default.fileExists(atPath: enviroments.path) {
+            throw TestError.message("enviroments.md must not exist")
+        }
         let entities = try String(contentsOf: temp.appendingPathComponent(".harness/entities.md"), encoding: .utf8)
         guard entities.contains("## User"), entities.contains("хеш:") else {
             throw TestError.message("User entity/hash missing")
@@ -47,6 +50,9 @@ enum SelfTest {
         }
         guard readme.contains("Не указана платформа") else {
             throw TestError.message("readme missing platform stop rule")
+        }
+        guard readme.contains("platforms/<platform>/"), readme.contains("web:api"), readme.contains("web:ui") else {
+            throw TestError.message("readme missing platforms/<platform>/ layout rule")
         }
         let versions = try String(contentsOf: temp.appendingPathComponent(".harness/versions.md"), encoding: .utf8)
         guard versions.contains("entity | User | init →") else {
@@ -59,27 +65,20 @@ enum SelfTest {
         guard platforms.contains("## web:ui"), platforms.contains("Next") else {
             throw TestError.message("platforms.md missing web:ui")
         }
-        let mentions = MentionParser.parse("каталог на +web:ui+ для ?User?")
+        let mentions = MentionParser.parse("каталог на _web:ui_ для ?User?")
         guard mentions.contains(where: { $0.kind == .platform && $0.name == "web:ui" }) else {
-            throw TestError.message("parser missed +platform+ mention")
+            throw TestError.message("parser missed _platform_ mention")
         }
         guard first.newTickets.contains(where: { $0.kind == .process }) else {
             throw TestError.message("first save should create process ticket")
-        }
-        guard first.project.environments.contains(where: { !$0.hash.isEmpty }) else {
-            throw TestError.message("environment hash missing")
         }
 
         if let index = project.entities.firstIndex(where: { $0.name == "Product" }) {
             project.entities[index].fields.append(EntityField(name: "sku", type: "String"))
         }
-        if var env = project.environments.first {
-            env.variables.append(EnvVariable(name: "NEW_FLAG", value: "1"))
-            project.environments[0] = env
-        }
         let second = try HarnessWriter.save(project: project)
         guard second.newTickets.contains(where: { $0.kind == .migration }) else {
-            throw TestError.message("entity/env change must create migration ticket")
+            throw TestError.message("entity change must create migration ticket")
         }
         guard !second.newTickets.contains(where: { $0.kind == .process }) else {
             throw TestError.message("unchanged process must not spawn another process ticket")

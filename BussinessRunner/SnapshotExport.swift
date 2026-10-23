@@ -24,8 +24,8 @@ enum SnapshotExport {
         workspace.editingProcessID = workspace.selectedProject?.processes.first?.id
         write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("01-process-editor.png"))
 
-        workspace.selectedTab = .environment
-        write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("02-environment.png"))
+        workspace.selectedTab = .platforms
+        write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("06-platforms.png"))
 
         workspace.selectedTab = .entities
         write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("03-entities.png"))
@@ -35,9 +35,6 @@ enum SnapshotExport {
 
         workspace.selectedTab = .roles
         write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("05-roles.png"))
-
-        workspace.selectedTab = .platforms
-        write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("06-platforms.png"))
 
         print("SNAPSHOT_OK \(directory.path)")
     }

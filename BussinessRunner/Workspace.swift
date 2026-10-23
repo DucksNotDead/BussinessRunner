@@ -6,7 +6,7 @@ import SwiftUI
 final class Workspace: ObservableObject {
     @Published var projects: [Project] = []
     @Published var selectedProjectID: UUID?
-    @Published var selectedTab: CanvasTab = .environment
+    @Published var selectedTab: CanvasTab = .platforms
     @Published var editingProcessID: UUID?
     @Published var cursorSnapshot: CursorInitSnapshot?
     @Published var cursorError: String?
@@ -113,7 +113,7 @@ final class Workspace: ObservableObject {
         guard panel.runModal() == .OK, let url = panel.url else { return }
         if let existing = projects.first(where: { $0.repoPath == url.path }) {
             selectedProjectID = existing.id
-            selectedTab = .environment
+            selectedTab = .platforms
             editingProcessID = nil
             return
         }
@@ -122,7 +122,7 @@ final class Workspace: ObservableObject {
         ProjectFactory.ensureUser(&project)
         projects.append(project)
         selectedProjectID = project.id
-        selectedTab = .environment
+        selectedTab = .platforms
         editingProcessID = nil
         persist()
     }
@@ -212,6 +212,8 @@ final class Workspace: ObservableObject {
         \(ticket.body)
 
         Прочитай /.harness/readme.md до работы. Не меняй /.harness/*.
+        Код пиши только в platforms/<platform>/ платформы этого тикета.
+
         """
         do {
             try HarnessWriter.setSlotStatus(.ACTIVE, inRepo: project.repoPath)
