@@ -11,7 +11,7 @@
 3. Запуск: `open dist/BussinessRunner.app` либо Run из Xcode.
 4. Проверка harness без UI: `make selftest`.
 
-Минимум macOS 14. Интерфейс русский.
+Минимум macOS 26. Интерфейс русский, Liquid Glass / unified toolbar.
 
 ## Цикл v0
 
