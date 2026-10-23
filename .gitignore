@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+Secrets.xcconfig
+*.xcconfig
+!Config.xcconfig
+.DS_Store
+.build/
+.swiftpm/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.app
+*.dSYM
+/dist/
+/.demo-target/
