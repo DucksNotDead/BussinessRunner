@@ -72,71 +72,11 @@ struct RootView: View {
                 Text(name)
                     .font(.headline)
             }
-            Spacer()
-            if let project = workspace.selectedProject {
-                StatusPill(status: project.slotStatus)
-                repoMenu
-                Button {
-                    workspace.saveSelected()
-                } label: {
-                    Label("Сохранить", systemImage: "square.and.arrow.down")
-                }
-                .brGlassProminent()
-                .keyboardShortcut("s", modifiers: .command)
-            }
-            connectionMenu
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
-    }
-
-    @ViewBuilder
-    private var repoMenu: some View {
-        if let binding = workspace.selectedProjectBinding {
-            Menu {
-                Button("Выбрать папку…") {
-                    workspace.chooseRepo(for: binding.wrappedValue.id)
-                }
-                Divider()
-                Text(binding.wrappedValue.repoPath.isEmpty ? "репозиторий не выбран" : binding.wrappedValue.repoPath)
-            } label: {
-                Label("Репозиторий", systemImage: "folder")
-            }
-            .menuStyle(.button)
-            .brGlass()
-        }
-    }
-
-    private var connectionMenu: some View {
-        Menu {
-            if let me = workspace.cursorSnapshot?.me {
-                let name = [me.userFirstName, me.userLastName].compactMap { $0 }.joined(separator: " ")
-                if !name.isEmpty { Text(name) }
-                if let email = me.userEmail { Text(email) }
-                Text("Моделей: \(workspace.cursorSnapshot?.models.count ?? 0)")
-            } else if let error = workspace.cursorError {
-                Text(error)
-            } else {
-                Text("Нет сессии")
-            }
-            if workspace.apiKeyPresent {
-                Text(workspace.apiKeyMasked)
-            }
-            Divider()
-            Button(workspace.cursorBusy ? "Проверяю…" : "Init Cursor") {
-                Task { await workspace.connectCursor() }
-            }
-        } label: {
-            Label {
-                Text(workspace.cursorSnapshot != nil ? "Cursor" : "Init")
-            } icon: {
-                Image(systemName: workspace.cursorSnapshot != nil ? "checkmark.seal.fill" : "bolt.horizontal.circle")
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(workspace.cursorSnapshot != nil ? Color.green : Color.secondary)
-            }
-        }
-        .menuStyle(.button)
-        .brGlass()
+        .contentShape(Rectangle())
     }
 }
 

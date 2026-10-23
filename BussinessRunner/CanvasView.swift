@@ -32,28 +32,27 @@ struct CanvasView: View {
 
     private var header: some View {
         HStack(alignment: .center, spacing: 12) {
-            Button(action: addInCurrentTab) {
-                Image(systemName: "plus")
-            }
-            .brGlassProminent()
-            .help(addHelp)
-
             Image(systemName: workspace.selectedTab.systemImage)
                 .font(.title2)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(.tint)
             Text(workspace.selectedTab.title)
                 .font(.largeTitle.weight(.semibold))
-            Spacer()
+            Spacer(minLength: 8)
             if let binding = workspace.selectedProjectBinding, !binding.wrappedValue.githubURL.isEmpty {
                 Text(binding.wrappedValue.githubURL)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
+            Button(action: addInCurrentTab) {
+                Image(systemName: "plus")
+            }
+            .brGlassProminent()
+            .help(addHelp)
         }
         .padding(.horizontal, 28)
-        .padding(.top, 18)
+        .padding(.top, 8)
         .padding(.bottom, 8)
     }
 
