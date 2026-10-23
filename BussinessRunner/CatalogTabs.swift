@@ -6,9 +6,6 @@ struct EnvironmentTab: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Text("Технологии, железо и переменные окружения. Сдвиг env vars на Save создаёт тикет migration.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
                 ForEach($project.environments) { $env in
                     GlassCard {
                         VStack(alignment: .leading, spacing: 16) {
@@ -51,12 +48,6 @@ struct EnvironmentTab: View {
                         }
                     }
                 }
-                Button {
-                    project.environments.append(DevEnvironment(name: "dev-\(project.environments.count + 1)", technologies: "", hardware: ""))
-                } label: {
-                    Label("Добавить среду", systemImage: "plus")
-                }
-                .brGlass()
             }
             .padding(28)
         }
@@ -69,9 +60,6 @@ struct EntitiesTab: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Text("User всегда есть и хешируется. Изменение сущностей на Save создаёт тикет migration.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 320), spacing: 16)], spacing: 16) {
                     ForEach($project.entities) { $entity in
                         GlassCard {
@@ -111,12 +99,6 @@ struct EntitiesTab: View {
                         }
                     }
                 }
-                Button {
-                    project.entities.append(Entity(name: "NewEntity"))
-                } label: {
-                    Label("Добавить сущность", systemImage: "plus")
-                }
-                .brGlass()
             }
             .padding(28)
         }
@@ -128,11 +110,7 @@ struct RolesTab: View {
     @Binding var project: Project
 
     var body: some View {
-        catalogList(
-            hint: "Опционально. На Save файл roles.md всё равно будет записан.",
-            addTitle: "Добавить роль",
-            add: { project.roles.append(Role(name: "")) }
-        ) {
+        catalogList {
             ForEach($project.roles) { $role in
                 GlassCard {
                     VStack(alignment: .leading, spacing: 12) {
@@ -158,11 +136,7 @@ struct RulesTab: View {
     @Binding var project: Project
 
     var body: some View {
-        catalogList(
-            hint: "Опционально. Агент следует им, только если не противоречат readme.md.",
-            addTitle: "Добавить правило",
-            add: { project.rules.append(UserRule(name: "", body: "")) }
-        ) {
+        catalogList {
             ForEach($project.rules) { $rule in
                 GlassCard {
                     VStack(alignment: .leading, spacing: 12) {
@@ -184,16 +158,12 @@ struct RulesTab: View {
     }
 }
 
-private func catalogList<Content: View>(hint: String, addTitle: String, add: @escaping () -> Void, @ViewBuilder content: () -> Content) -> some View {
+private func catalogList<Content: View>(@ViewBuilder content: () -> Content) -> some View {
     ScrollView {
         VStack(alignment: .leading, spacing: 18) {
-            Text(hint).font(.callout).foregroundStyle(.secondary)
             content()
-            Button(action: add) {
-                Label(addTitle, systemImage: "plus")
-            }
-            .brGlass()
         }
         .padding(28)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

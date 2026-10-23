@@ -15,17 +15,13 @@ struct RootView: View {
                         CanvasView()
                     } else {
                         ContentUnavailableView(
-                            "Соберите проект",
+                            "Создайте проект",
                             systemImage: "square.dashed",
-                            description: Text("Имя, целевой репозиторий — Save запишет /.harness/ туда.")
+                            description: Text("Новый проект откроет Finder — создайте или выберите папку. Save запишет туда /.harness/.")
                         )
                     }
                 }
             }
-        }
-        .sheet(isPresented: $workspace.presentNewProject) {
-            NewProjectSheet()
-                .environmentObject(workspace)
         }
         .sheet(isPresented: $workspace.presentBugSheet) {
             BugComposerSheet()
@@ -195,7 +191,7 @@ struct ProjectSidebar: View {
             VStack(spacing: 10) {
                 connectionChip
                 Button {
-                    workspace.presentNewProject = true
+                    workspace.createProjectFromFinder()
                 } label: {
                     Label("Новый проект", systemImage: "plus")
                         .frame(maxWidth: .infinity)
@@ -240,10 +236,11 @@ struct ProjectSidebar: View {
             .padding(.horizontal, 10)
             .padding(.vertical, subtitle == nil ? 8 : 9)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
             .background(selected ? Color.accentColor.opacity(0.22) : Color.clear, in: RoundedRectangle(cornerRadius: BR.sidebar, style: .continuous))
             .brSurface(radius: BR.sidebar, interactive: selected, tint: selected ? .accentColor : nil, apply: selected)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(FullRowButtonStyle())
     }
 
     private var connectionChip: some View {
@@ -264,39 +261,6 @@ struct ProjectSidebar: View {
         }
         .padding(10)
         .brSurface(radius: 14, interactive: false)
-    }
-}
-
-struct NewProjectSheet: View {
-    @EnvironmentObject private var workspace: Workspace
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            Text("Новый проект")
-                .font(.largeTitle.weight(.semibold))
-            BRField(label: "Имя", prompt: "hmmml shop", text: $workspace.newProjectName)
-            HStack(alignment: .bottom, spacing: 10) {
-                BRField(label: "Репозиторий", prompt: "Путь к git", text: $workspace.newProjectPath)
-                Button("Папка") { workspace.chooseRepo() }
-                    .brGlass()
-                    .controlSize(.large)
-            }
-            Text("User создаётся сразу. Роли и правила можно оставить пустыми — файлы всё равно запишутся.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            HStack {
-                Spacer()
-                Button("Отмена") { workspace.presentNewProject = false }
-                    .brGlass()
-                    .keyboardShortcut(.cancelAction)
-                Button("Создать") { workspace.createProject() }
-                    .brGlassProminent()
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(workspace.newProjectName.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
-        }
-        .padding(28)
-        .frame(width: 520)
     }
 }
 

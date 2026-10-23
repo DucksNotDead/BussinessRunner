@@ -17,7 +17,7 @@ enum SelfTest {
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
-        var project = ProjectFactory.demoHmmmlShop(repoPath: temp.path)
+        var project = ProjectFactory.demoProject(repoPath: temp.path)
         let first = try HarnessWriter.save(project: project)
         project = first.project
         try assertExists(temp, "entities.md")

@@ -3,7 +3,6 @@ import SwiftUI
 struct ProcessesTab: View {
     @Binding var project: Project
     @EnvironmentObject private var workspace: Workspace
-    @State private var draftName = ""
 
     var body: some View {
         HSplitView {
@@ -16,7 +15,7 @@ struct ProcessesTab: View {
                 ContentUnavailableView(
                     "Процесс",
                     systemImage: "point.3.connected.trianglepath.dotted",
-                    description: Text("Выберите процесс слева или создайте новый — список сожмётся.")
+                    description: Text("Выберите процесс слева или нажмите + в заголовке.")
                 )
             }
         }
@@ -26,11 +25,6 @@ struct ProcessesTab: View {
 
     private var processList: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Процессы")
-                .font(.headline)
-                .padding(.horizontal, 18)
-                .padding(.top, 8)
-                .padding(.bottom, 10)
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(project.processes) { process in
@@ -53,12 +47,13 @@ struct ProcessesTab: View {
                             }
                             .padding(12)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
                             .brSurface(
                                 radius: 18,
                                 tint: workspace.editingProcessID == process.id ? .accentColor : nil
                             )
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(FullRowButtonStyle())
                         .contextMenu {
                             Button("Удалить", role: .destructive) {
                                 project.processes.removeAll { $0.id == process.id }
@@ -70,35 +65,8 @@ struct ProcessesTab: View {
                     }
                 }
                 .padding(.horizontal, 14)
+                .padding(.top, 10)
             }
-            HStack(spacing: 8) {
-                TextField("Имя процесса", text: $draftName)
-                    .textFieldStyle(.plain)
-                    .padding(10)
-                    .brSurface(radius: 12, interactive: false)
-                    .onSubmit(addProcess)
-                Button(action: addProcess) {
-                    Image(systemName: "plus")
-                }
-                .brGlassProminent()
-                .disabled(draftName.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
-            .padding(14)
         }
-    }
-
-    private func addProcess() {
-        let name = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
-        let process = ProjectProcess(
-            name: name,
-            actions: [ProcessAction(text: "")],
-            testCases: [""],
-            acceptanceCriteria: [""]
-        )
-        project.processes.append(process)
-        workspace.editingProcessID = process.id
-        draftName = ""
-        workspace.persist()
     }
 }

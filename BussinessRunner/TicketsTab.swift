@@ -7,19 +7,6 @@ struct TicketsTab: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                HStack {
-                    Text("process и migration появляются на Save. Баг заводите здесь.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Button {
-                        workspace.presentBugSheet = true
-                    } label: {
-                        Label("Новый баг", systemImage: "plus")
-                    }
-                    .brGlassProminent()
-                }
-
                 if project.tickets.isEmpty {
                     GlassCard {
                         EmptyHint(text: "Пока пусто. Save процесса создаст process, сдвиг сущностей или env — migration.")

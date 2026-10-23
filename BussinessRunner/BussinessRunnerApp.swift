@@ -42,7 +42,7 @@ struct BussinessRunnerApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("Новый проект") {
-                    workspace.presentNewProject = true
+                    workspace.createProjectFromFinder()
                 }
                 .keyboardShortcut("n", modifiers: .command)
             }

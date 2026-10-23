@@ -211,8 +211,8 @@ enum ProjectFactory {
         }
     }
 
-    static func demoHmmmlShop(repoPath: String) -> Project {
-        var project = make(name: "hmmml shop", repoPath: repoPath)
+    static func demoProject(repoPath: String) -> Project {
+        var project = make(name: "Демо", repoPath: repoPath)
         project.githubURL = ""
         project.environments = [
             DevEnvironment(
@@ -220,7 +220,7 @@ enum ProjectFactory {
                 technologies: "Next.js, PostgreSQL, SwiftUI-админка",
                 hardware: "Mac mini",
                 variables: [
-                    EnvVariable(name: "DATABASE_URL", value: "postgres://localhost:5432/hmmml_dev"),
+                    EnvVariable(name: "DATABASE_URL", value: "postgres://localhost:5432/dev"),
                     EnvVariable(name: "STOCK_THRESHOLD", value: "3")
                 ]
             )

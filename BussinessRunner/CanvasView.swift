@@ -31,15 +31,19 @@ struct CanvasView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            if let tab = Optional(workspace.selectedTab) {
-                Image(systemName: tab.systemImage)
-                    .font(.title2)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.tint)
-                Text(tab.title)
-                    .font(.largeTitle.weight(.semibold))
+        HStack(alignment: .center, spacing: 12) {
+            Button(action: addInCurrentTab) {
+                Image(systemName: "plus")
             }
+            .brGlassProminent()
+            .help(addHelp)
+
+            Image(systemName: workspace.selectedTab.systemImage)
+                .font(.title2)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.tint)
+            Text(workspace.selectedTab.title)
+                .font(.largeTitle.weight(.semibold))
             Spacer()
             if let binding = workspace.selectedProjectBinding, !binding.wrappedValue.githubURL.isEmpty {
                 Text(binding.wrappedValue.githubURL)
@@ -51,5 +55,46 @@ struct CanvasView: View {
         .padding(.horizontal, 28)
         .padding(.top, 18)
         .padding(.bottom, 8)
+    }
+
+    private var addHelp: String {
+        switch workspace.selectedTab {
+        case .environment: return "Добавить среду"
+        case .entities: return "Добавить сущность"
+        case .roles: return "Добавить роль"
+        case .rules: return "Добавить правило"
+        case .processes: return "Добавить процесс"
+        case .tickets: return "Новый баг"
+        }
+    }
+
+    private func addInCurrentTab() {
+        guard var project = workspace.selectedProject else { return }
+        switch workspace.selectedTab {
+        case .environment:
+            project.environments.append(
+                DevEnvironment(name: "dev-\(project.environments.count + 1)", technologies: "", hardware: "")
+            )
+        case .entities:
+            project.entities.append(Entity(name: "NewEntity"))
+        case .roles:
+            project.roles.append(Role(name: ""))
+        case .rules:
+            project.rules.append(UserRule(name: "", body: ""))
+        case .processes:
+            let process = ProjectProcess(
+                name: "Новый процесс",
+                actions: [ProcessAction(text: "")],
+                testCases: [""],
+                acceptanceCriteria: [""]
+            )
+            project.processes.append(process)
+            workspace.editingProcessID = process.id
+        case .tickets:
+            workspace.presentBugSheet = true
+            return
+        }
+        workspace.selectedProject = project
+        workspace.persist()
     }
 }

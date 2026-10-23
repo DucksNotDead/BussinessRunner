@@ -109,6 +109,15 @@ extension View {
     }
 }
 
+struct FullRowButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .opacity(configuration.isPressed ? 0.72 : 1)
+    }
+}
+
 struct GlassCard<Content: View>: View {
     var padding: CGFloat = 20
     var radius: CGFloat = BR.card

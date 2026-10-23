@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>BussinessRunner</string>
 	<key>CFBundleIdentifier</key>
-	<string>shop.hmmml.BussinessRunner</string>
+	<string>app.BussinessRunner</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

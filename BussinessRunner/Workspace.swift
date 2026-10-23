@@ -15,10 +15,7 @@ final class Workspace: ObservableObject {
     @Published var apiKeyMasked = ""
     @Published var saveMessage: String?
     @Published var saveError: String?
-    @Published var presentNewProject = false
     @Published var presentBugSheet = false
-    @Published var newProjectName = ""
-    @Published var newProjectPath = ""
     @Published var agentLaunchMessage: String?
 
     private let api = CursorAPI()
@@ -102,23 +99,34 @@ final class Workspace: ObservableObject {
         }
     }
 
-    func createProject() {
-        let name = newProjectName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let path = newProjectPath.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
-        var project = ProjectFactory.make(name: name, repoPath: path)
+    func createProjectFromFinder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = true
+        panel.prompt = "Выбрать"
+        panel.title = "Новый проект"
+        panel.message = "Создайте папку проекта или выберите существующую."
+        panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("dev", isDirectory: true)
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        if let existing = projects.first(where: { $0.repoPath == url.path }) {
+            selectedProjectID = existing.id
+            selectedTab = .environment
+            editingProcessID = nil
+            return
+        }
+        ensureGitRepo(at: url)
+        var project = ProjectFactory.make(name: url.lastPathComponent, repoPath: url.path)
         ProjectFactory.ensureUser(&project)
         projects.append(project)
         selectedProjectID = project.id
         selectedTab = .environment
         editingProcessID = nil
-        presentNewProject = false
-        newProjectName = ""
-        newProjectPath = ""
         persist()
     }
 
-    func chooseRepo(for projectID: UUID? = nil) {
+    func chooseRepo(for projectID: UUID) {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
@@ -127,12 +135,20 @@ final class Workspace: ObservableObject {
         panel.prompt = "Выбрать"
         panel.message = "Целевой git-репозиторий, куда Save запишет /.harness/"
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        if let projectID, let index = projects.firstIndex(where: { $0.id == projectID }) {
-            projects[index].repoPath = url.path
-            persist()
-        } else {
-            newProjectPath = url.path
-        }
+        guard let index = projects.firstIndex(where: { $0.id == projectID }) else { return }
+        projects[index].repoPath = url.path
+        persist()
+    }
+
+    private func ensureGitRepo(at url: URL) {
+        let git = url.appendingPathComponent(".git")
+        guard !FileManager.default.fileExists(atPath: git.path) else { return }
+        let task = Foundation.Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+        task.arguments = ["init"]
+        task.currentDirectoryURL = url
+        try? task.run()
+        task.waitUntilExit()
     }
 
     func saveSelected() {
@@ -224,33 +240,27 @@ final class Workspace: ObservableObject {
         guard let data = try? Data(contentsOf: persistURL) else { return }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        if let loaded = try? decoder.decode([Project].self, from: data) {
-            projects = loaded
-            selectedProjectID = loaded.first?.id
+        guard let loaded = try? decoder.decode([Project].self, from: data) else { return }
+        let cleaned = loaded.filter { !$0.repoPath.hasSuffix("/.demo-target") }
+        projects = cleaned
+        selectedProjectID = cleaned.first?.id
+        if cleaned.count != loaded.count {
+            persist()
         }
     }
 
     func seedDemoIfNeeded() {
-        if projects.contains(where: { $0.name == "hmmml shop" }) {
-            selectedProjectID = projects.first(where: { $0.name == "hmmml shop" })?.id
+        if let existing = projects.first(where: { $0.repoPath.hasSuffix("/.demo-target") }) {
+            selectedProjectID = existing.id
             return
         }
         let demoRoot = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("dev/BussinessRunner/.demo-target")
         try? FileManager.default.createDirectory(at: demoRoot, withIntermediateDirectories: true)
-        let git = demoRoot.appendingPathComponent(".git")
-        if !FileManager.default.fileExists(atPath: git.path) {
-            let task = Process()
-            task.executableURL = URL(fileURLWithPath: "/usr/bin/git")
-            task.arguments = ["init"]
-            task.currentDirectoryURL = demoRoot
-            try? task.run()
-            task.waitUntilExit()
-        }
-        let project = ProjectFactory.demoHmmmlShop(repoPath: demoRoot.path)
+        ensureGitRepo(at: demoRoot)
+        let project = ProjectFactory.demoProject(repoPath: demoRoot.path)
         projects.insert(project, at: 0)
         selectedProjectID = project.id
         selectedTab = .processes
         editingProcessID = project.processes.first?.id
-        persist()
     }
 }
