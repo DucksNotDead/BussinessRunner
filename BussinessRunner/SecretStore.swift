@@ -6,20 +6,34 @@ enum SecretStore {
     static let keychainAccount = "CURSOR_API_KEY"
     static let envKey = "CURSOR_API_KEY"
 
+    private static let lock = NSLock()
+    private static var cached: String?
+    private static var loaded = false
+
     static func loadAPIKey() -> String? {
-        if let keychain = readKeychain(), !keychain.isEmpty {
-            return keychain
-        }
+        lock.lock()
+        defer { lock.unlock() }
+        if loaded { return cached }
+
         for url in candidateEnvFiles() {
             if let value = readEnvFile(url) {
-                try? saveToKeychain(value)
+                cached = value
+                loaded = true
                 return value
             }
         }
         if let env = ProcessInfo.processInfo.environment[envKey], !env.isEmpty {
-            try? saveToKeychain(env)
+            cached = env
+            loaded = true
             return env
         }
+        if let keychain = readKeychain(), !keychain.isEmpty {
+            cached = keychain
+            loaded = true
+            return keychain
+        }
+        cached = nil
+        loaded = true
         return nil
     }
 
@@ -27,6 +41,10 @@ enum SecretStore {
         let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw SecretError.empty }
         try saveToKeychain(trimmed)
+        lock.lock()
+        cached = trimmed
+        loaded = true
+        lock.unlock()
     }
 
     static func masked(_ key: String) -> String {
@@ -80,8 +98,7 @@ enum SecretStore {
             kSecAttrService as String: keychainService,
             kSecAttrAccount as String: keychainAccount,
             kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-            kSecUseAuthenticationUI as String: "fail"
+            kSecMatchLimit as String: kSecMatchLimitOne
         ]
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)

@@ -71,6 +71,7 @@ final class Workspace: ObservableObject {
     }
 
     func connectCursor() async {
+        if cursorBusy { return }
         cursorBusy = true
         cursorError = nil
         defer { cursorBusy = false }
