@@ -7,35 +7,29 @@ struct TicketsTab: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                if project.tickets.isEmpty {
-                    GlassCard {
-                        EmptyHint(text: "Пока пусто. Save процесса создаст process, сдвиг сущностей — migration.")
-                    }
-                } else {
-                    ForEach(project.tickets.sorted(by: { $0.createdAt > $1.createdAt })) { ticket in
-                        GlassCard {
-                            VStack(alignment: .leading, spacing: 10) {
-                                HStack(spacing: 10) {
-                                    TicketKindBadge(kind: ticket.kind)
-                                    Text(ticket.title)
-                                        .font(.title3.weight(.semibold))
-                                    Spacer()
-                                    Button {
-                                        Task { await workspace.launchTicket(ticket) }
-                                    } label: {
-                                        Label("Агент", systemImage: "bolt.fill")
-                                    }
-                                    .brGlass()
+                ForEach(project.tickets.sorted(by: { $0.createdAt > $1.createdAt })) { ticket in
+                    BRCard {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack(spacing: 10) {
+                                TicketKindBadge(kind: ticket.kind)
+                                Text(ticket.title)
+                                    .font(.title3.weight(.semibold))
+                                Spacer()
+                                Button {
+                                    Task { await workspace.launchTicket(ticket) }
+                                } label: {
+                                    Label("Агент", systemImage: "bolt.fill")
                                 }
-                                Text(ticket.body)
-                                    .font(.callout)
+                                .brGlass()
+                            }
+                            Text(ticket.body)
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(5)
+                            if !ticket.affectedEntities.isEmpty {
+                                Label(ticket.affectedEntities.joined(separator: ", "), systemImage: "cylinder.split.1x2")
+                                    .font(.caption)
                                     .foregroundStyle(.secondary)
-                                    .lineLimit(5)
-                                if !ticket.affectedEntities.isEmpty {
-                                    Label(ticket.affectedEntities.joined(separator: ", "), systemImage: "cylinder.split.1x2")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
                             }
                         }
                     }

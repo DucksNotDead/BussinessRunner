@@ -35,9 +35,10 @@ struct BussinessRunnerApp: App {
             RootView()
                 .environmentObject(workspace)
                 .frame(minWidth: 1180, minHeight: 760)
+                .toolbar(removing: .title)
+                .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         }
         .windowStyle(.hiddenTitleBar)
-        .windowToolbarStyle(.unified)
         .defaultSize(width: 1380, height: 860)
         .commands {
             CommandGroup(replacing: .newItem) {
@@ -45,6 +46,17 @@ struct BussinessRunnerApp: App {
                     workspace.createProjectFromFinder()
                 }
                 .keyboardShortcut("n", modifiers: .command)
+                Button("Новая вкладка") {
+                    workspace.createProjectFromFinder()
+                }
+                .keyboardShortcut("t", modifiers: .command)
+            }
+            CommandGroup(after: .newItem) {
+                Button("Закрыть вкладку") {
+                    workspace.closeSelectedProject()
+                }
+                .keyboardShortcut("w", modifiers: .command)
+                .disabled(workspace.selectedProjectID == nil)
             }
             CommandMenu("Harness") {
                 Button("Сохранить в /.harness/") {

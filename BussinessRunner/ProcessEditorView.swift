@@ -17,7 +17,7 @@ struct ProcessEditorView: View {
     private var editor: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                GlassCard {
+                BRCard {
                     HStack(spacing: 12) {
                         TextField("Имя процесса", text: $process.name)
                             .font(.title2.weight(.semibold))
@@ -28,11 +28,12 @@ struct ProcessEditorView: View {
                         }
                         .toggleStyle(.switch)
                         .controlSize(.small)
+                        .brPointer()
                         HashCapsule(hash: process.hash)
                     }
                 }
 
-                GlassCard {
+                BRCard {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Упоминания")
                             .font(.subheadline.weight(.semibold))
@@ -46,7 +47,7 @@ struct ProcessEditorView: View {
                     }
                 }
 
-                GlassCard {
+                BRCard {
                     VStack(alignment: .leading, spacing: 12) {
                         SectionLabel(title: "Действия", systemImage: "list.number")
                         ForEach(Array(process.actions.enumerated()), id: \.element.id) { index, _ in
@@ -74,7 +75,7 @@ struct ProcessEditorView: View {
                     }
                 }
 
-                GlassCard {
+                BRCard {
                     VStack(alignment: .leading, spacing: 12) {
                         SectionLabel(title: "Логические блоки", systemImage: "arrow.triangle.branch")
                         Text("Наследуют хеш процесса")
@@ -85,9 +86,10 @@ struct ProcessEditorView: View {
                                 TextField("Если / иначе / параллельно", text: $block.title)
                                     .textFieldStyle(.plain)
                                     .padding(10)
-                                    .brSurface(radius: 12, interactive: false)
+                                    .modifier(BRInset(radius: 12))
                                 ForEach(process.actions) { action in
                                     Toggle(action.text.isEmpty ? "пустое действие" : action.text, isOn: bindingFor(blockID: block.id, actionID: action.id))
+                                        .brPointer()
                                 }
                             }
                         }
@@ -100,7 +102,7 @@ struct ProcessEditorView: View {
                     }
                 }
 
-                GlassCard {
+                BRCard {
                     VStack(alignment: .leading, spacing: 10) {
                         SectionLabel(title: "Вложенный процесс", systemImage: "square.stack.3d.up")
                         let others = project.processes.filter { $0.id != process.id }
@@ -110,15 +112,16 @@ struct ProcessEditorView: View {
                         } else {
                             ForEach(others) { other in
                                 Toggle(other.name, isOn: nestedBinding(other.id))
+                                    .brPointer()
                             }
                         }
                     }
                 }
 
-                GlassCard {
+                BRCard {
                     stringList("Тест-кейсы", "checkmark.circle", $process.testCases, placeholder: "Ожидаемое поведение")
                 }
-                GlassCard {
+                BRCard {
                     stringList("Критерии приёмки", "seal", $process.acceptanceCriteria, placeholder: "Для второго агента")
                 }
             }
@@ -180,7 +183,7 @@ struct ProcessEditorView: View {
                     TextField(placeholder, text: items[index], axis: .vertical)
                         .textFieldStyle(.plain)
                         .padding(10)
-                        .brSurface(radius: 12, interactive: false)
+                        .modifier(BRInset(radius: 12))
                     IconCircleButton(systemName: "xmark", role: .destructive) {
                         items.wrappedValue.remove(at: index)
                     }

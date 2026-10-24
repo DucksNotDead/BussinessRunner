@@ -22,6 +22,8 @@ enum SnapshotExport {
 
         workspace.selectedTab = .processes
         workspace.editingProcessID = workspace.selectedProject?.processes.first?.id
+        workspace.changesBarExpanded = false
+        workspace.snapshotExpandedSelect = false
         write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("01-process-editor.png"))
 
         workspace.snapshotMentionKind = .platform
@@ -29,7 +31,9 @@ enum SnapshotExport {
         workspace.snapshotMentionKind = nil
 
         workspace.selectedTab = .platforms
+        workspace.snapshotExpandedSelect = true
         write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("06-platforms.png"))
+        workspace.snapshotExpandedSelect = false
 
         workspace.selectedTab = .entities
         write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("03-entities.png"))
@@ -40,6 +44,20 @@ enum SnapshotExport {
         workspace.selectedTab = .roles
         write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("05-roles.png"))
 
+        workspace.selectedTab = .processes
+        workspace.changesBarExpanded = true
+        write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("08-changes-bar.png"))
+        workspace.changesBarExpanded = false
+
+        if let id = workspace.selectedProjectID,
+           let index = workspace.projects.firstIndex(where: { $0.id == id }) {
+            let saved = workspace.projects[index]
+            workspace.projects[index].platforms = []
+            workspace.selectedTab = .platforms
+            write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("09-empty-tab.png"))
+            workspace.projects[index] = saved
+        }
+
         print("SNAPSHOT_OK \(directory.path)")
     }
 
@@ -47,6 +65,7 @@ enum SnapshotExport {
     private static func write<V: View>(_ view: V, size: CGSize, to url: URL) {
         let hosted = view
             .frame(width: size.width, height: size.height)
+            .environment(\.colorScheme, .dark)
             .preferredColorScheme(.dark)
         let nsView = NSHostingView(rootView: hosted)
         nsView.frame = NSRect(origin: .zero, size: size)

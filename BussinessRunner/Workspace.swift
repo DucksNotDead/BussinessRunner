@@ -18,6 +18,8 @@ final class Workspace: ObservableObject {
     @Published var presentBugSheet = false
     @Published var agentLaunchMessage: String?
     @Published var snapshotMentionKind: MentionKind?
+    @Published var changesBarExpanded = false
+    @Published var snapshotExpandedSelect = false
 
     private let api = CursorAPI()
     private let persistURL: URL
@@ -31,10 +33,16 @@ final class Workspace: ObservableObject {
     }
 
     var selectedProjectBinding: Binding<Project>? {
-        guard let id = selectedProjectID, let index = projects.firstIndex(where: { $0.id == id }) else { return nil }
+        guard let id = selectedProjectID, projects.contains(where: { $0.id == id }) else { return nil }
         return Binding(
-            get: { self.projects[index] },
-            set: { self.projects[index] = $0; self.persist() }
+            get: {
+                self.projects.first(where: { $0.id == id }) ?? Project(name: "", repoPath: "")
+            },
+            set: { updated in
+                guard let index = self.projects.firstIndex(where: { $0.id == id }) else { return }
+                self.projects[index] = updated
+                self.persist()
+            }
         )
     }
 
@@ -128,6 +136,16 @@ final class Workspace: ObservableObject {
         persist()
     }
 
+    func closeProject(_ id: UUID) {
+        ProjectTabs.close(id, projects: &projects, selectedID: &selectedProjectID, editingProcessID: &editingProcessID)
+        persist()
+    }
+
+    func closeSelectedProject() {
+        guard let id = selectedProjectID else { return }
+        closeProject(id)
+    }
+
     func chooseRepo(for projectID: UUID) {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
@@ -169,6 +187,7 @@ final class Workspace: ObservableObject {
             let tickets = result.newTickets.map(\.kind.rawValue).joined(separator: ", ")
             let ticketNote = result.newTickets.isEmpty ? "новых тикетов нет" : "тикеты: \(tickets)"
             saveMessage = "Записано \(result.writtenRelativePaths.count) файлов. \(ticketNote)."
+            changesBarExpanded = false
             selectedTab = .tickets
         } catch {
             saveError = error.localizedDescription

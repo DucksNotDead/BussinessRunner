@@ -6,8 +6,17 @@ struct CanvasView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
-            tabBody
+            if isCurrentTabEmpty {
+                EmptyTabHero(
+                    title: workspace.selectedTab.emptyTitle,
+                    detail: workspace.selectedTab.emptyDetail,
+                    action: addInCurrentTab
+                )
+            } else {
+                tabBody
+            }
         }
+        .padding(.bottom, 96)
     }
 
     @ViewBuilder
@@ -35,7 +44,7 @@ struct CanvasView: View {
             Image(systemName: workspace.selectedTab.systemImage)
                 .font(.title2)
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.tint)
+                .foregroundStyle(.secondary)
             Text(workspace.selectedTab.title)
                 .font(.largeTitle.weight(.semibold))
             Spacer(minLength: 8)
@@ -45,15 +54,25 @@ struct CanvasView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-            Button(action: addInCurrentTab) {
-                Image(systemName: "plus")
+            if !isCurrentTabEmpty {
+                OutlinedPlusButton(size: 36, help: addHelp, action: addInCurrentTab)
             }
-            .brGlassProminent()
-            .help(addHelp)
         }
         .padding(.horizontal, 28)
         .padding(.top, 8)
         .padding(.bottom, 8)
+    }
+
+    private var isCurrentTabEmpty: Bool {
+        guard let project = workspace.selectedProject else { return true }
+        switch workspace.selectedTab {
+        case .platforms: return project.platforms.isEmpty
+        case .entities: return project.entities.isEmpty
+        case .roles: return project.roles.isEmpty
+        case .rules: return project.rules.isEmpty
+        case .processes: return project.processes.isEmpty
+        case .tickets: return project.tickets.isEmpty
+        }
     }
 
     private var addHelp: String {

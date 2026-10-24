@@ -20,20 +20,33 @@ struct ActionMentionField: View {
                 .textFieldStyle(.plain)
                 .lineLimit(2...4)
                 .padding(10)
-                .brSurface(radius: 14, interactive: false)
+                .modifier(BRInset(radius: 14))
                 .onChange(of: action.text) { _, newValue in
                     if let token = MentionScan.activeToken(in: newValue) {
-                        openKind = token.kind
-                        query = token.query
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                            openKind = token.kind
+                            query = token.query
+                        }
                     } else if forceKind == nil {
-                        openKind = nil
-                        query = ""
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
+                            openKind = nil
+                            query = ""
+                        }
                     }
                 }
+            if !action.links.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(action.links) { link in
+                        MentionChip(mention: Mention(link))
+                    }
+                }
+            }
             if let kind = openKind ?? forceKind {
                 palette(kind: kind)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
+        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: openKind)
         .onAppear {
             if forceKind != nil {
                 openKind = forceKind
@@ -83,7 +96,14 @@ struct ActionMentionField: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .brSurface(radius: 16, interactive: false)
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.ultraThinMaterial)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+        }
     }
 
     private func candidates(kind: MentionKind, query: String) -> [MentionCandidate] {
@@ -98,7 +118,7 @@ struct ActionMentionField: View {
                 return MentionCandidate(
                     id: platform.id.uuidString,
                     link: ActionLink(kind: .platform, targetID: platform.id, name: name, hash: platform.hash),
-                    subtitle: platform.framework
+                    subtitle: platform.database.isEmpty ? platform.framework : "\(platform.framework) · \(platform.database)"
                 )
             }
         case .role:
@@ -137,11 +157,14 @@ struct ActionMentionField: View {
 
     private func pick(_ link: ActionLink) {
         let token = MentionScan.activeToken(in: action.text)
-        action.text = MentionScan.insert(label: link.name, replacing: token, in: action.text)
+        let next = MentionScan.insert(label: link.name, replacing: token, in: action.text)
+        action.text = next
         if !action.links.contains(where: { $0.kind == link.kind && $0.targetID == link.targetID && $0.name == link.name }) {
             action.links.append(link)
         }
-        openKind = nil
-        query = ""
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
+            openKind = nil
+            query = ""
+        }
     }
 }

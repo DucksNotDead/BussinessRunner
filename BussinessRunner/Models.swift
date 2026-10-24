@@ -12,12 +12,35 @@ enum PlatformKind: String, Codable, CaseIterable, Identifiable {
 
     var frameworks: [String] {
         switch self {
-        case .webAPI: return ["Node/Express", "FastAPI", "Django", "Go", "Spring"]
-        case .webUI: return ["React", "Vue", "Svelte", "Next", "Angular"]
-        case .ios: return ["SwiftUI", "UIKit"]
-        case .android: return ["Jetpack Compose", "Views"]
-        case .macos: return ["SwiftUI", "AppKit"]
-        case .windows: return ["WinUI", "WPF"]
+        case .webAPI:
+            return [
+                "Node/Express", "Nest", "Fastify", "Hono", "FastAPI", "Django", "Flask",
+                "Gin", "Fiber", "Echo", "Spring", "Ktor", "ASP.NET", "Laravel", "Rails",
+                "Phoenix", "Axum"
+            ]
+        case .webUI:
+            return ["React", "Next", "Vue", "Nuxt", "Svelte", "SvelteKit", "Angular", "Remix", "Astro", "Solid"]
+        case .ios:
+            return ["SwiftUI", "UIKit", "Flutter", "React Native"]
+        case .android:
+            return ["Jetpack Compose", "Views", "Flutter", "React Native", "Kotlin Multiplatform"]
+        case .macos:
+            return ["SwiftUI", "AppKit", "Catalyst", "Electron", "Tauri"]
+        case .windows:
+            return ["WinUI", "WPF", "WinForms", "MAUI", "Electron", "Tauri", "Flutter"]
+        }
+    }
+
+    var databases: [String] {
+        switch self {
+        case .webAPI:
+            return [
+                "PostgreSQL", "MySQL", "MariaDB", "SQLite", "SQL Server", "Oracle",
+                "MongoDB", "Redis", "CockroachDB", "DynamoDB", "Firestore", "Cassandra",
+                "ClickHouse", "Supabase", "PlanetScale"
+            ]
+        default:
+            return []
         }
     }
 }
@@ -26,9 +49,43 @@ struct ProjectPlatform: Identifiable, Codable, Equatable {
     var id: UUID = UUID()
     var kind: PlatformKind
     var framework: String
+    var database: String = ""
     var hash: String = ""
 
-    var versionName: String { "\(kind.rawValue) · \(framework)" }
+    enum CodingKeys: String, CodingKey {
+        case id, kind, framework, database, hash
+    }
+
+    var versionName: String {
+        if database.isEmpty {
+            return "\(kind.rawValue) · \(framework)"
+        }
+        return "\(kind.rawValue) · \(framework) · \(database)"
+    }
+
+    init(kind: PlatformKind, framework: String, database: String = "", hash: String = "", id: UUID = UUID()) {
+        self.id = id
+        self.kind = kind
+        self.framework = framework
+        self.database = database.isEmpty ? (kind.databases.first ?? "") : database
+        self.hash = hash
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        kind = try container.decode(PlatformKind.self, forKey: .kind)
+        framework = try container.decode(String.self, forKey: .framework)
+        hash = try container.decodeIfPresent(String.self, forKey: .hash) ?? ""
+        let stored = try container.decodeIfPresent(String.self, forKey: .database) ?? ""
+        if kind.databases.isEmpty {
+            database = ""
+        } else if kind.databases.contains(stored) {
+            database = stored
+        } else {
+            database = kind.databases.first ?? ""
+        }
+    }
 }
 
 struct EntityField: Identifiable, Codable, Equatable {
@@ -171,6 +228,76 @@ enum CanvasTab: String, CaseIterable, Identifiable {
         case .tickets: return "ticket"
         }
     }
+
+    var emptyTitle: String {
+        switch self {
+        case .platforms: return "Целевые платформы продукта"
+        case .entities: return "Сущности модели данных"
+        case .roles: return "Роли участников"
+        case .rules: return "Пользовательские правила"
+        case .processes: return "Процессы, которые ведёт PM"
+        case .tickets: return "Тикеты process, bug и migration"
+        }
+    }
+
+    var emptyDetail: String {
+        switch self {
+        case .platforms:
+            return "Закрытый список: web:api, web:ui, ios, android, macos, windows. Без платформы тикеты не создаются и не принимаются."
+        case .entities:
+            return "User есть всегда. Остальные сущности заводятся здесь."
+        case .roles:
+            return "Необязательно — вкладку можно оставить пустой. У каждой роли будет хеш после Save."
+        case .rules:
+            return "Необязательно. Агент следует им только там, где они не противоречат readme."
+        case .processes:
+            return "Нужен хотя бы один процесс, чтобы Save записал harness. Действия связываются через _ ! ? \"\"\"."
+        case .tickets:
+            return "process и migration появляются при Save. Баг заводится здесь. Без платформы тикет не принимается."
+        }
+    }
+
+    var pendingChangeType: String? {
+        switch self {
+        case .platforms: return "platform"
+        case .entities: return "entity"
+        case .roles: return "role"
+        case .rules: return "rule"
+        case .processes: return "process"
+        case .tickets: return "ticket"
+        }
+    }
+}
+
+struct ChangeCounts: Equatable {
+    var added = 0
+    var removed = 0
+    var changed = 0
+
+    var isEmpty: Bool { added == 0 && removed == 0 && changed == 0 }
+}
+
+struct PendingChange: Identifiable, Equatable {
+    enum Status: String, Equatable {
+        case added
+        case changed
+        case removed
+
+        var title: String {
+            switch self {
+            case .added: return "добавлено"
+            case .changed: return "изменено"
+            case .removed: return "удалено"
+            }
+        }
+    }
+
+    var type: String
+    var typeTitle: String
+    var name: String
+    var status: Status
+
+    var id: String { "\(type)|\(name)|\(status.rawValue)" }
 }
 
 enum MentionKind: String, Codable, CaseIterable {
@@ -256,6 +383,23 @@ enum MentionScan {
         }
         let needsSpace = !prefix.isEmpty && !prefix.hasSuffix(" ") && !prefix.hasSuffix("\n")
         return prefix + (needsSpace ? " " : "") + label + " "
+    }
+}
+
+enum ProjectTabs {
+    static func close(
+        _ id: UUID,
+        projects: inout [Project],
+        selectedID: inout UUID?,
+        editingProcessID: inout UUID?
+    ) {
+        guard let index = projects.firstIndex(where: { $0.id == id }) else { return }
+        let wasSelected = selectedID == id
+        projects.remove(at: index)
+        guard wasSelected else { return }
+        let next = projects.indices.contains(index) ? projects[index] : projects.last
+        selectedID = next?.id
+        editingProcessID = next.flatMap { $0.processes.first?.id }
     }
 }
 

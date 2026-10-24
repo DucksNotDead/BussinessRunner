@@ -79,6 +79,65 @@ enum HarnessWriter {
         return SaveResult(project: project, writtenRelativePaths: written, newTickets: newTickets, newVersions: newVersions)
     }
 
+    static func pendingChanges(in project: Project) -> [PendingChange] {
+        let previous = Snapshot(project: project)
+        var hashed = project
+        rehash(&hashed)
+        return describeDiff(previous: previous, current: Snapshot(project: hashed))
+    }
+
+    static func changeCounts(in project: Project) -> [CanvasTab: ChangeCounts] {
+        let changes = pendingChanges(in: project)
+        var result: [CanvasTab: ChangeCounts] = [:]
+        for tab in CanvasTab.allCases {
+            guard let type = tab.pendingChangeType else {
+                result[tab] = ChangeCounts()
+                continue
+            }
+            let subset = changes.filter { $0.type == type }
+            result[tab] = ChangeCounts(
+                added: subset.filter { $0.status == .added }.count,
+                removed: subset.filter { $0.status == .removed }.count,
+                changed: subset.filter { $0.status == .changed }.count
+            )
+        }
+        return result
+    }
+
+    private static func describeDiff(previous: Snapshot, current: Snapshot) -> [PendingChange] {
+        var changes: [PendingChange] = []
+        appendDiff(type: "platform", title: "Платформа", previous: previous.platforms, current: current.platforms, into: &changes)
+        appendDiff(type: "entity", title: "Сущность", previous: previous.entities, current: current.entities, into: &changes)
+        appendDiff(type: "role", title: "Роль", previous: previous.roles, current: current.roles, into: &changes)
+        appendDiff(type: "rule", title: "Правило", previous: previous.rules, current: current.rules, into: &changes)
+        appendDiff(type: "process", title: "Процесс", previous: previous.processes, current: current.processes, into: &changes)
+        return changes
+    }
+
+    private static func appendDiff(
+        type: String,
+        title: String,
+        previous: [String: String],
+        current: [String: String],
+        into changes: inout [PendingChange]
+    ) {
+        for name in Set(previous.keys).union(current.keys).sorted() {
+            let old = previous[name] ?? ""
+            let new = current[name] ?? ""
+            if old == new, !old.isEmpty { continue }
+            if old.isEmpty && new.isEmpty { continue }
+            let status: PendingChange.Status
+            if old.isEmpty {
+                status = .added
+            } else if new.isEmpty {
+                status = .removed
+            } else {
+                status = .changed
+            }
+            changes.append(PendingChange(type: type, typeTitle: title, name: name, status: status))
+        }
+    }
+
     static func requirePlatform(_ project: Project) throws {
         if project.platforms.isEmpty {
             throw HarnessError.noPlatform
@@ -308,7 +367,11 @@ enum HarnessWriter {
         for platform in project.platforms {
             md += "## \(platform.kind.rawValue)\n\n"
             md += "- хеш: `\(platform.hash)`\n"
-            md += "- фреймворк: \(platform.framework)\n\n"
+            md += "- фреймворк: \(platform.framework)\n"
+            if !platform.database.isEmpty {
+                md += "- субд: \(platform.database)\n"
+            }
+            md += "\n"
         }
         return md
     }
