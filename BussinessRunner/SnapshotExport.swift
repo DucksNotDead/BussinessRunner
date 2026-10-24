@@ -31,9 +31,8 @@ enum SnapshotExport {
         workspace.snapshotMentionKind = nil
 
         workspace.selectedTab = .platforms
-        workspace.snapshotExpandedSelect = true
-        write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("06-platforms.png"))
         workspace.snapshotExpandedSelect = false
+        write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("06-platforms.png"))
 
         workspace.selectedTab = .entities
         write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("03-entities.png"))

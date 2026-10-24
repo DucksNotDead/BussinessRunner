@@ -72,6 +72,9 @@ enum SelfTest {
         guard platforms.contains("## web:ui"), platforms.contains("Next") else {
             throw TestError.message("platforms.md missing web:ui")
         }
+        guard platforms.contains("## web:api"), platforms.contains("Node/Express"), platforms.contains("субд: PostgreSQL") else {
+            throw TestError.message("platforms.md missing web:api database")
+        }
         guard MentionScan.activeToken(in: "каталог _web")?.kind == .platform else {
             throw TestError.message("_ should open platform search")
         }
@@ -87,11 +90,26 @@ enum SelfTest {
         guard MentionScan.activeToken(in: "каталог на web:ui.") == nil else {
             throw TestError.message("wrap-markup must not be treated as a mention")
         }
-        guard PlatformKind.webAPI.frameworks.contains("Nest") else {
-            throw TestError.message("web:api frameworks must include Nest")
+        guard PlatformKind.webAPI.frameworks.contains("Nest"),
+              PlatformKind.webAPI.frameworks.contains("Fastify"),
+              PlatformKind.webAPI.frameworks.contains("Axum") else {
+            throw TestError.message("web:api frameworks must include Nest, Fastify, Axum")
         }
-        guard PlatformKind.webAPI.frameworks == ["Node/Express", "Nest", "FastAPI", "Django", "Go", "Spring"] else {
-            throw TestError.message("web:api framework order mismatch")
+        guard PlatformKind.webUI.frameworks.contains("Nuxt"),
+              PlatformKind.ios.frameworks.contains("Flutter"),
+              PlatformKind.windows.frameworks.contains("MAUI") else {
+            throw TestError.message("platform frameworks must include Nuxt, Flutter, MAUI")
+        }
+        guard PlatformKind.webAPI.databases.contains("PostgreSQL"),
+              PlatformKind.webAPI.databases.contains("MongoDB"),
+              PlatformKind.webUI.databases.isEmpty else {
+            throw TestError.message("СУБД must be available on web:api only")
+        }
+        var hashedAPI = ProjectPlatform(kind: .webAPI, framework: "Nest", database: "PostgreSQL")
+        let hashPostgres = ContentHash.platform(hashedAPI)
+        hashedAPI.database = "MongoDB"
+        guard hashPostgres != ContentHash.platform(hashedAPI) else {
+            throw TestError.message("platform hash must include database")
         }
         let typedPlatform = "Клиент открывает каталог _"
         guard let platformToken = MentionScan.activeToken(in: typedPlatform), platformToken.kind == .platform else {

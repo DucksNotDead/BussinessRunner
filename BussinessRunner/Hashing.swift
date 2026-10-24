@@ -12,7 +12,7 @@ enum ContentHash {
     }
 
     static func platform(_ platform: ProjectPlatform) -> String {
-        sha256(["platform", platform.kind.rawValue, platform.framework].joined(separator: "\n"))
+        sha256(["platform", platform.kind.rawValue, platform.framework, platform.database].joined(separator: "\n"))
     }
 
     static func entity(_ entity: Entity) -> String {

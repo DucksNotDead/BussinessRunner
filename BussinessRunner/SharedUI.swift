@@ -315,35 +315,38 @@ struct BRSelect<Value: Hashable>: View {
     private var isOpen: Bool { expanded || forceExpanded }
 
     private var menu: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            ForEach(options, id: \.self) { option in
-                Button {
-                    pick(option)
-                } label: {
-                    HStack(spacing: 8) {
-                        Text(label(option))
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-                        Spacer(minLength: 4)
-                        if option == selection {
-                            Image(systemName: "checkmark")
-                                .font(.caption.weight(.bold))
-                                .foregroundStyle(.secondary)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 2) {
+                ForEach(options, id: \.self) { option in
+                    Button {
+                        pick(option)
+                    } label: {
+                        HStack(spacing: 8) {
+                            Text(label(option))
+                                .foregroundStyle(.primary)
+                                .lineLimit(1)
+                            Spacer(minLength: 4)
+                            if option == selection {
+                                Image(systemName: "checkmark")
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(.secondary)
+                            }
                         }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                        .background(
+                            option == selection ? Color.primary.opacity(0.08) : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        )
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                    .background(
-                        option == selection ? Color.primary.opacity(0.08) : Color.clear,
-                        in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    )
+                    .buttonStyle(.plain)
+                    .brNoFocusRing()
                 }
-                .buttonStyle(.plain)
-                .brNoFocusRing()
             }
         }
+        .frame(height: min(CGFloat(options.count) * 38 + 8, 280))
         .padding(6)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {

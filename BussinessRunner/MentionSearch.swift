@@ -118,7 +118,7 @@ struct ActionMentionField: View {
                 return MentionCandidate(
                     id: platform.id.uuidString,
                     link: ActionLink(kind: .platform, targetID: platform.id, name: name, hash: platform.hash),
-                    subtitle: platform.framework
+                    subtitle: platform.database.isEmpty ? platform.framework : "\(platform.framework) · \(platform.database)"
                 )
             }
         case .role:

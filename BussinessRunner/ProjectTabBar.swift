@@ -104,7 +104,7 @@ private struct ProjectTabItem: View {
             }
             Text(project.name)
                 .font(.callout.weight(selected ? .semibold : .regular))
-                .foregroundStyle(selected ? .primary : .secondary)
+                .foregroundStyle(selected ? Color.primary : Color.secondary)
                 .lineLimit(1)
             Spacer(minLength: 0)
         }
@@ -115,7 +115,7 @@ private struct ProjectTabItem: View {
         .background {
             if selected {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(scheme == .dark ? Color.white.opacity(0.10) : Color.white.opacity(0.72))
+                    .fill(Color.accentColor.opacity(scheme == .dark ? 0.34 : 0.20))
             } else if hovered {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
                     .fill(Color.primary.opacity(0.05))
@@ -124,7 +124,7 @@ private struct ProjectTabItem: View {
         .overlay {
             if selected {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .strokeBorder(Color.white.opacity(scheme == .dark ? 0.10 : 0.35), lineWidth: 1)
+                    .strokeBorder(Color.accentColor.opacity(scheme == .dark ? 0.9 : 0.75), lineWidth: 1.5)
             }
         }
         .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))

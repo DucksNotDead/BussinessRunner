@@ -349,7 +349,11 @@ enum HarnessWriter {
         for platform in project.platforms {
             md += "## \(platform.kind.rawValue)\n\n"
             md += "- хеш: `\(platform.hash)`\n"
-            md += "- фреймворк: \(platform.framework)\n\n"
+            md += "- фреймворк: \(platform.framework)\n"
+            if !platform.database.isEmpty {
+                md += "- субд: \(platform.database)\n"
+            }
+            md += "\n"
         }
         return md
     }

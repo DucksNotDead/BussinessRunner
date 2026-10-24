@@ -44,6 +44,11 @@ private struct PlatformCard: View {
                     if !kind.frameworks.contains(platform.framework) {
                         platform.framework = kind.frameworks.first ?? ""
                     }
+                    if kind.databases.isEmpty {
+                        platform.database = ""
+                    } else if !kind.databases.contains(platform.database) {
+                        platform.database = kind.databases.first ?? ""
+                    }
                 }
                 BRSelect(
                     title: "Фреймворк",
@@ -52,6 +57,14 @@ private struct PlatformCard: View {
                     forceExpanded: forceExpandFramework,
                     selection: $platform.framework
                 )
+                if !platform.kind.databases.isEmpty {
+                    BRSelect(
+                        title: "СУБД",
+                        options: platform.kind.databases,
+                        label: { $0 },
+                        selection: $platform.database
+                    )
+                }
                 Spacer(minLength: 0)
                 HStack {
                     HashCapsule(hash: platform.hash)
