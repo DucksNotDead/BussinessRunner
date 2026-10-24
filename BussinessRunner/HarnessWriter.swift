@@ -86,6 +86,24 @@ enum HarnessWriter {
         return describeDiff(previous: previous, current: Snapshot(project: hashed))
     }
 
+    static func changeCounts(in project: Project) -> [CanvasTab: ChangeCounts] {
+        let changes = pendingChanges(in: project)
+        var result: [CanvasTab: ChangeCounts] = [:]
+        for tab in CanvasTab.allCases {
+            guard let type = tab.pendingChangeType else {
+                result[tab] = ChangeCounts()
+                continue
+            }
+            let subset = changes.filter { $0.type == type }
+            result[tab] = ChangeCounts(
+                added: subset.filter { $0.status == .added }.count,
+                removed: subset.filter { $0.status == .removed }.count,
+                changed: subset.filter { $0.status == .changed }.count
+            )
+        }
+        return result
+    }
+
     private static func describeDiff(previous: Snapshot, current: Snapshot) -> [PendingChange] {
         var changes: [PendingChange] = []
         appendDiff(type: "platform", title: "Платформа", previous: previous.platforms, current: current.platforms, into: &changes)

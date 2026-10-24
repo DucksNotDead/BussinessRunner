@@ -256,6 +256,25 @@ enum CanvasTab: String, CaseIterable, Identifiable {
             return "process и migration появляются при Save. Баг заводится здесь. Без платформы тикет не принимается."
         }
     }
+
+    var pendingChangeType: String? {
+        switch self {
+        case .platforms: return "platform"
+        case .entities: return "entity"
+        case .roles: return "role"
+        case .rules: return "rule"
+        case .processes: return "process"
+        case .tickets: return "ticket"
+        }
+    }
+}
+
+struct ChangeCounts: Equatable {
+    var added = 0
+    var removed = 0
+    var changed = 0
+
+    var isEmpty: Bool { added == 0 && removed == 0 && changed == 0 }
 }
 
 struct PendingChange: Identifiable, Equatable {

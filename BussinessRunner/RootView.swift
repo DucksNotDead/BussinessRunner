@@ -85,12 +85,8 @@ struct CanvasSidebar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Канва")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .padding(.leading, 78)
-                .padding(.trailing, 20)
-                .frame(height: 44, alignment: .center)
+            Color.clear
+                .frame(height: 44)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 2) {
@@ -98,7 +94,8 @@ struct CanvasSidebar: View {
                         sidebarRow(
                             title: tab.title,
                             systemImage: tab.systemImage,
-                            selected: workspace.selectedTab == tab
+                            selected: workspace.selectedTab == tab,
+                            counts: countsByTab[tab] ?? ChangeCounts()
                         ) {
                             workspace.selectedTab = tab
                         }
@@ -111,9 +108,20 @@ struct CanvasSidebar: View {
         .background(.ultraThinMaterial)
     }
 
-    private func sidebarRow(title: String, systemImage: String, selected: Bool, action: @escaping () -> Void) -> some View {
+    private var countsByTab: [CanvasTab: ChangeCounts] {
+        guard let project = workspace.selectedProject else { return [:] }
+        return HarnessWriter.changeCounts(in: project)
+    }
+
+    private func sidebarRow(
+        title: String,
+        systemImage: String,
+        selected: Bool,
+        counts: ChangeCounts,
+        action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 Capsule()
                     .fill(selected ? Color.accentColor.opacity(0.85) : Color.clear)
                     .frame(width: 3, height: 14)
@@ -124,11 +132,13 @@ struct CanvasSidebar: View {
                     .foregroundStyle(selected ? .primary : .secondary)
                 Text(title)
                     .font(.body.weight(selected ? .semibold : .regular))
-                Spacer(minLength: 0)
+                    .foregroundStyle(selected ? .primary : .secondary)
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                TabChangeBadges(counts: counts)
             }
-            .foregroundStyle(selected ? .primary : .secondary)
             .padding(.leading, 7)
-            .padding(.trailing, 10)
+            .padding(.trailing, 8)
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
@@ -141,6 +151,33 @@ struct CanvasSidebar: View {
         }
         .buttonStyle(.plain)
         .brNoFocusRing()
+    }
+}
+
+private struct TabChangeBadges: View {
+    var counts: ChangeCounts
+
+    var body: some View {
+        if !counts.isEmpty {
+            HStack(spacing: 5) {
+                if counts.added > 0 {
+                    Text("+\(counts.added)")
+                        .foregroundStyle(Color.green)
+                }
+                if counts.removed > 0 {
+                    Text("-\(counts.removed)")
+                        .foregroundStyle(Color.red)
+                }
+                if counts.changed > 0 {
+                    HStack(spacing: 2) {
+                        Image(systemName: "pencil")
+                        Text("\(counts.changed)")
+                    }
+                    .foregroundStyle(Color.yellow)
+                }
+            }
+            .font(.caption.weight(.semibold).monospacedDigit())
+        }
     }
 }
 

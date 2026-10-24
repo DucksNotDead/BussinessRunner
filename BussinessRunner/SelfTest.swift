@@ -25,6 +25,16 @@ enum SelfTest {
         guard pendingBefore.contains(where: { $0.type == "platform" && $0.name.contains("web:ui") }) else {
             throw TestError.message("unsaved platform should appear in pending changes")
         }
+        let countsBefore = HarnessWriter.changeCounts(in: project)
+        guard (countsBefore[.entities]?.added ?? 0) >= 1 else {
+            throw TestError.message("entities tab should show added count before Save")
+        }
+        guard (countsBefore[.platforms]?.added ?? 0) >= 1 else {
+            throw TestError.message("platforms tab should show added count before Save")
+        }
+        guard countsBefore[.tickets]?.isEmpty == true else {
+            throw TestError.message("tickets tab has no pending harness counts")
+        }
         let first = try HarnessWriter.save(project: project)
         project = first.project
         try assertExists(temp, "entities.md")
@@ -164,6 +174,10 @@ enum SelfTest {
         let pendingEdit = HarnessWriter.pendingChanges(in: project)
         guard pendingEdit.contains(where: { $0.type == "entity" && $0.name == "Product" && $0.status == .changed }) else {
             throw TestError.message("edited Product should show as changed")
+        }
+        let countsEdit = HarnessWriter.changeCounts(in: project)
+        guard (countsEdit[.entities]?.changed ?? 0) >= 1 else {
+            throw TestError.message("entities tab should show yellow changed count after edit")
         }
         if let index = project.processes.firstIndex(where: { $0.name == "Оформление заказа" }) {
             project.processes[index].testCases.append("Повторный заказ тем же User.")
