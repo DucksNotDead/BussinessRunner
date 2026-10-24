@@ -28,15 +28,20 @@ struct RootView: View {
                 .environmentObject(workspace)
         }
         .overlay(alignment: .bottomTrailing) {
-            if let message = workspace.saveMessage, SnapshotExport.requestedDirectory == nil {
-                Text(message)
-                    .font(.callout)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .brCapsule(tint: .green.opacity(0.35))
-                    .padding(20)
-                    .onTapGesture { workspace.saveMessage = nil }
+            VStack(alignment: .trailing, spacing: 10) {
+                if let message = workspace.saveMessage, SnapshotExport.requestedDirectory == nil {
+                    Text(message)
+                        .font(.callout)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .brCapsule(tint: .green.opacity(0.35))
+                        .onTapGesture { workspace.saveMessage = nil }
+                }
+                if workspace.selectedProject != nil {
+                    ChangesBar()
+                }
             }
+            .padding(20)
         }
         .onAppear {
             Task { @MainActor in

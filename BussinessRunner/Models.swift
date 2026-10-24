@@ -12,7 +12,7 @@ enum PlatformKind: String, Codable, CaseIterable, Identifiable {
 
     var frameworks: [String] {
         switch self {
-        case .webAPI: return ["Node/Express", "FastAPI", "Django", "Go", "Spring"]
+        case .webAPI: return ["Node/Express", "Nest", "FastAPI", "Django", "Go", "Spring"]
         case .webUI: return ["React", "Vue", "Svelte", "Next", "Angular"]
         case .ios: return ["SwiftUI", "UIKit"]
         case .android: return ["Jetpack Compose", "Views"]
@@ -171,6 +171,29 @@ enum CanvasTab: String, CaseIterable, Identifiable {
         case .tickets: return "ticket"
         }
     }
+}
+
+struct PendingChange: Identifiable, Equatable {
+    enum Status: String, Equatable {
+        case added
+        case changed
+        case removed
+
+        var title: String {
+            switch self {
+            case .added: return "добавлено"
+            case .changed: return "изменено"
+            case .removed: return "удалено"
+            }
+        }
+    }
+
+    var type: String
+    var typeTitle: String
+    var name: String
+    var status: Status
+
+    var id: String { "\(type)|\(name)|\(status.rawValue)" }
 }
 
 enum MentionKind: String, Codable, CaseIterable {

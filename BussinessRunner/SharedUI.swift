@@ -109,6 +109,125 @@ extension View {
     }
 }
 
+struct AddCapsuleButton: View {
+    var title: String = "Добавить"
+    var help: String = ""
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.body.weight(.semibold))
+                .padding(.horizontal, 6)
+        }
+        .buttonBorderShape(.capsule)
+        .controlSize(.regular)
+        .brGlassProminent()
+        .help(help)
+    }
+}
+
+struct BRSelectOpenPreference: PreferenceKey {
+    static var defaultValue = false
+    static func reduce(value: inout Bool, nextValue: () -> Bool) {
+        value = value || nextValue()
+    }
+}
+
+struct BRSelect<Value: Hashable>: View {
+    var title: String = ""
+    var options: [Value]
+    var label: (Value) -> String
+    var forceExpanded: Bool = false
+    @Binding var selection: Value
+    @State private var expanded = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if !title.isEmpty {
+                Text(title)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+            Button {
+                withAnimation(.spring(response: 0.34, dampingFraction: 0.78)) {
+                    expanded.toggle()
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Text(label(selection))
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isOpen ? 180 : 0))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .brSurface(radius: 14)
+
+            if isOpen {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(options, id: \.self) { option in
+                        Button {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
+                                selection = option
+                                expanded = false
+                            }
+                        } label: {
+                            HStack(spacing: 8) {
+                                Text(label(option))
+                                    .foregroundStyle(.primary)
+                                    .lineLimit(1)
+                                Spacer(minLength: 4)
+                                if option == selection {
+                                    Image(systemName: "checkmark")
+                                        .font(.caption.weight(.bold))
+                                        .foregroundStyle(.tint)
+                                }
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                            .background(
+                                option == selection ? Color.accentColor.opacity(0.18) : Color.clear,
+                                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(6)
+                .brSurface(radius: 16, interactive: false)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .top)),
+                    removal: .opacity
+                ))
+            }
+        }
+        .animation(.spring(response: 0.34, dampingFraction: 0.78), value: isOpen)
+        .preference(key: BRSelectOpenPreference.self, value: isOpen)
+        .zIndex(isOpen ? 20 : 0)
+        .onAppear {
+            if forceExpanded {
+                expanded = true
+            }
+        }
+        .onChange(of: forceExpanded) { _, next in
+            expanded = next
+        }
+    }
+
+    private var isOpen: Bool { expanded || forceExpanded }
+}
+
 struct FullRowButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label

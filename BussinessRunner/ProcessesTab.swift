@@ -15,7 +15,7 @@ struct ProcessesTab: View {
                 ContentUnavailableView(
                     "Процесс",
                     systemImage: "point.3.connected.trianglepath.dotted",
-                    description: Text("Выберите процесс слева или нажмите + в заголовке.")
+                    description: Text("Выберите процесс слева или нажмите «Добавить» в заголовке.")
                 )
             }
         }

@@ -79,6 +79,47 @@ enum HarnessWriter {
         return SaveResult(project: project, writtenRelativePaths: written, newTickets: newTickets, newVersions: newVersions)
     }
 
+    static func pendingChanges(in project: Project) -> [PendingChange] {
+        let previous = Snapshot(project: project)
+        var hashed = project
+        rehash(&hashed)
+        return describeDiff(previous: previous, current: Snapshot(project: hashed))
+    }
+
+    private static func describeDiff(previous: Snapshot, current: Snapshot) -> [PendingChange] {
+        var changes: [PendingChange] = []
+        appendDiff(type: "platform", title: "Платформа", previous: previous.platforms, current: current.platforms, into: &changes)
+        appendDiff(type: "entity", title: "Сущность", previous: previous.entities, current: current.entities, into: &changes)
+        appendDiff(type: "role", title: "Роль", previous: previous.roles, current: current.roles, into: &changes)
+        appendDiff(type: "rule", title: "Правило", previous: previous.rules, current: current.rules, into: &changes)
+        appendDiff(type: "process", title: "Процесс", previous: previous.processes, current: current.processes, into: &changes)
+        return changes
+    }
+
+    private static func appendDiff(
+        type: String,
+        title: String,
+        previous: [String: String],
+        current: [String: String],
+        into changes: inout [PendingChange]
+    ) {
+        for name in Set(previous.keys).union(current.keys).sorted() {
+            let old = previous[name] ?? ""
+            let new = current[name] ?? ""
+            if old == new, !old.isEmpty { continue }
+            if old.isEmpty && new.isEmpty { continue }
+            let status: PendingChange.Status
+            if old.isEmpty {
+                status = .added
+            } else if new.isEmpty {
+                status = .removed
+            } else {
+                status = .changed
+            }
+            changes.append(PendingChange(type: type, typeTitle: title, name: name, status: status))
+        }
+    }
+
     static func requirePlatform(_ project: Project) throws {
         if project.platforms.isEmpty {
             throw HarnessError.noPlatform

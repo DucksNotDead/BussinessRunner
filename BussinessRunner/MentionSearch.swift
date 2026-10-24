@@ -23,17 +23,30 @@ struct ActionMentionField: View {
                 .brSurface(radius: 14, interactive: false)
                 .onChange(of: action.text) { _, newValue in
                     if let token = MentionScan.activeToken(in: newValue) {
-                        openKind = token.kind
-                        query = token.query
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                            openKind = token.kind
+                            query = token.query
+                        }
                     } else if forceKind == nil {
-                        openKind = nil
-                        query = ""
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
+                            openKind = nil
+                            query = ""
+                        }
                     }
                 }
+            if !action.links.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(action.links) { link in
+                        MentionChip(mention: Mention(link))
+                    }
+                }
+            }
             if let kind = openKind ?? forceKind {
                 palette(kind: kind)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
+        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: openKind)
         .onAppear {
             if forceKind != nil {
                 openKind = forceKind
@@ -137,11 +150,14 @@ struct ActionMentionField: View {
 
     private func pick(_ link: ActionLink) {
         let token = MentionScan.activeToken(in: action.text)
-        action.text = MentionScan.insert(label: link.name, replacing: token, in: action.text)
+        let next = MentionScan.insert(label: link.name, replacing: token, in: action.text)
+        action.text = next
         if !action.links.contains(where: { $0.kind == link.kind && $0.targetID == link.targetID && $0.name == link.name }) {
             action.links.append(link)
         }
-        openKind = nil
-        query = ""
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
+            openKind = nil
+            query = ""
+        }
     }
 }

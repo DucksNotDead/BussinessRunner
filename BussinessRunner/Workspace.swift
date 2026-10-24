@@ -18,6 +18,8 @@ final class Workspace: ObservableObject {
     @Published var presentBugSheet = false
     @Published var agentLaunchMessage: String?
     @Published var snapshotMentionKind: MentionKind?
+    @Published var changesBarExpanded = false
+    @Published var snapshotExpandedSelect = false
 
     private let api = CursorAPI()
     private let persistURL: URL
@@ -169,6 +171,7 @@ final class Workspace: ObservableObject {
             let tickets = result.newTickets.map(\.kind.rawValue).joined(separator: ", ")
             let ticketNote = result.newTickets.isEmpty ? "новых тикетов нет" : "тикеты: \(tickets)"
             saveMessage = "Записано \(result.writtenRelativePaths.count) файлов. \(ticketNote)."
+            changesBarExpanded = false
             selectedTab = .tickets
         } catch {
             saveError = error.localizedDescription

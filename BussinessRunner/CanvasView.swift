@@ -8,6 +8,7 @@ struct CanvasView: View {
             header
             tabBody
         }
+        .padding(.bottom, 96)
     }
 
     @ViewBuilder
@@ -45,11 +46,7 @@ struct CanvasView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-            Button(action: addInCurrentTab) {
-                Image(systemName: "plus")
-            }
-            .brGlassProminent()
-            .help(addHelp)
+            AddCapsuleButton(title: "Добавить", help: addHelp, action: addInCurrentTab)
         }
         .padding(.horizontal, 28)
         .padding(.top, 8)

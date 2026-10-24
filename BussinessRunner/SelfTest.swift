@@ -18,6 +18,13 @@ enum SelfTest {
         defer { try? FileManager.default.removeItem(at: temp) }
 
         var project = ProjectFactory.demoProject(repoPath: temp.path)
+        let pendingBefore = HarnessWriter.pendingChanges(in: project)
+        guard pendingBefore.contains(where: { $0.type == "entity" && $0.name == "User" && $0.status == .added }) else {
+            throw TestError.message("unsaved User should appear in pending changes")
+        }
+        guard pendingBefore.contains(where: { $0.type == "platform" && $0.name.contains("web:ui") }) else {
+            throw TestError.message("unsaved platform should appear in pending changes")
+        }
         let first = try HarnessWriter.save(project: project)
         project = first.project
         try assertExists(temp, "entities.md")
@@ -80,6 +87,31 @@ enum SelfTest {
         guard MentionScan.activeToken(in: "каталог на web:ui.") == nil else {
             throw TestError.message("wrap-markup must not be treated as a mention")
         }
+        guard PlatformKind.webAPI.frameworks.contains("Nest") else {
+            throw TestError.message("web:api frameworks must include Nest")
+        }
+        guard PlatformKind.webAPI.frameworks == ["Node/Express", "Nest", "FastAPI", "Django", "Go", "Spring"] else {
+            throw TestError.message("web:api framework order mismatch")
+        }
+        let typedPlatform = "Клиент открывает каталог _"
+        guard let platformToken = MentionScan.activeToken(in: typedPlatform), platformToken.kind == .platform else {
+            throw TestError.message("_ should open platform pick")
+        }
+        let insertedPlatform = MentionScan.insert(label: "web:ui", replacing: platformToken, in: typedPlatform)
+        guard insertedPlatform == "Клиент открывает каталог web:ui " else {
+            throw TestError.message("platform pick should insert a plain name, got \(insertedPlatform)")
+        }
+        guard !insertedPlatform.contains("_web:ui_"), !insertedPlatform.contains("_web:ui") else {
+            throw TestError.message("insert must not keep wrap-markup")
+        }
+        let typedVariable = "порог \"\"\"ST"
+        guard let variableToken = MentionScan.activeToken(in: typedVariable), variableToken.kind == .variable else {
+            throw TestError.message("\"\"\" should open variable pick")
+        }
+        let insertedVariable = MentionScan.insert(label: "STOCK_THRESHOLD", replacing: variableToken, in: typedVariable)
+        guard insertedVariable.contains("STOCK_THRESHOLD"), !insertedVariable.contains("\"\"\"STOCK") else {
+            throw TestError.message("variable pick should drop triple quotes, got \(insertedVariable)")
+        }
         let demoLinks = first.project.processes[0].actions.flatMap(\.links)
         guard demoLinks.contains(where: { $0.kind == .platform && $0.name == "web:ui" && $0.targetID != nil && !$0.hash.isEmpty }) else {
             throw TestError.message("action should store platform link with id/hash")
@@ -104,6 +136,17 @@ enum SelfTest {
         }
 
         project = second.project
+        let pendingAfterSave = HarnessWriter.pendingChanges(in: project)
+        guard pendingAfterSave.isEmpty else {
+            throw TestError.message("pending changes should clear after Save, got \(pendingAfterSave.map(\.name))")
+        }
+        if let index = project.entities.firstIndex(where: { $0.name == "Product" }) {
+            project.entities[index].relations += " sku"
+        }
+        let pendingEdit = HarnessWriter.pendingChanges(in: project)
+        guard pendingEdit.contains(where: { $0.type == "entity" && $0.name == "Product" && $0.status == .changed }) else {
+            throw TestError.message("edited Product should show as changed")
+        }
         if let index = project.processes.firstIndex(where: { $0.name == "Оформление заказа" }) {
             project.processes[index].testCases.append("Повторный заказ тем же User.")
         }
