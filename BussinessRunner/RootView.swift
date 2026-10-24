@@ -23,6 +23,7 @@ struct RootView: View {
                 }
             }
         }
+        .focusEffectDisabled()
         .sheet(isPresented: $workspace.presentBugSheet) {
             BugComposerSheet()
                 .environmentObject(workspace)
@@ -44,7 +45,9 @@ struct RootView: View {
             .padding(20)
         }
         .onAppear {
+            NSApp.keyWindow?.makeFirstResponder(nil)
             Task { @MainActor in
+                NSApp.keyWindow?.makeFirstResponder(nil)
                 print("UI ready")
                 if SnapshotExport.requestedDirectory == nil {
                     await workspace.connectCursor()
@@ -155,6 +158,7 @@ struct ProjectSidebar: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .brNoFocusRing()
                     .help("Новый проект")
                 }
             }
@@ -166,12 +170,17 @@ struct ProjectSidebar: View {
     private func sidebarRow(title: String, subtitle: String?, systemImage: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 10) {
+                Capsule()
+                    .fill(selected ? Color.accentColor.opacity(0.85) : Color.clear)
+                    .frame(width: 3, height: subtitle == nil ? 14 : 22)
                 Image(systemName: systemImage)
                     .font(.body)
                     .frame(width: 22)
                     .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(selected ? .primary : .secondary)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(title).font(.body.weight(.medium))
+                    Text(title)
+                        .font(.body.weight(selected ? .semibold : .regular))
                     if let subtitle {
                         Text(subtitle)
                             .font(.caption)
@@ -181,17 +190,21 @@ struct ProjectSidebar: View {
                 }
                 Spacer(minLength: 0)
             }
-            .foregroundStyle(.primary)
-            .padding(.horizontal, 10)
+            .foregroundStyle(selected ? .primary : .secondary)
+            .padding(.leading, 7)
+            .padding(.trailing, 10)
             .padding(.vertical, subtitle == nil ? 8 : 9)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
-            .background(
-                selected ? Color.primary.opacity(0.08) : Color.clear,
-                in: RoundedRectangle(cornerRadius: BR.sidebar, style: .continuous)
-            )
+            .background {
+                if selected {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.primary.opacity(0.05))
+                }
+            }
         }
-        .buttonStyle(FullRowButtonStyle())
+        .buttonStyle(.plain)
+        .brNoFocusRing()
     }
 
     private var connectionChip: some View {
@@ -211,7 +224,7 @@ struct ProjectSidebar: View {
             Spacer()
         }
         .padding(10)
-        .brSurface(radius: 14, interactive: false)
+        .modifier(BRInset(radius: 14))
     }
 }
 

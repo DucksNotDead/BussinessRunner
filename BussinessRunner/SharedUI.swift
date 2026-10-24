@@ -75,6 +75,10 @@ struct BRSurface: ViewModifier {
 }
 
 extension View {
+    func brNoFocusRing() -> some View {
+        self.focusable(false).focusEffectDisabled()
+    }
+
     func brSurface(radius: CGFloat = BR.card, interactive: Bool = true, tint: Color? = nil, apply: Bool = true) -> some View {
         modifier(BRSurface(radius: radius, interactive: interactive, tint: tint, apply: apply))
     }
@@ -127,6 +131,7 @@ struct OutlinedPlusButton: View {
         .overlay(
             Circle().strokeBorder(Color.primary.opacity(0.32), lineWidth: lineWidth)
         )
+        .brNoFocusRing()
         .help(help)
     }
 }
@@ -155,10 +160,101 @@ struct EmptyTabHero: View {
     }
 }
 
-struct BRSelectOpenPreference: PreferenceKey {
-    static var defaultValue = false
-    static func reduce(value: inout Bool, nextValue: () -> Bool) {
-        value = value || nextValue()
+struct BRCard<Content: View>: View {
+    var padding: CGFloat = 20
+    var radius: CGFloat = BR.card
+    var square: Bool = false
+    var tint: Color? = nil
+    @Environment(\.colorScheme) private var scheme
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+        content()
+            .padding(padding)
+            .frame(maxWidth: .infinity, maxHeight: square ? .infinity : nil, alignment: .topLeading)
+            .modifier(BRSquareCard(enabled: square))
+            .background {
+                shape.fill(.ultraThinMaterial)
+                if let tint {
+                    shape.fill(tint.opacity(scheme == .dark ? 0.22 : 0.14))
+                }
+                shape.fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(scheme == .dark ? 0.09 : 0.55),
+                            Color.white.opacity(0)
+                        ],
+                        startPoint: .top,
+                        endPoint: UnitPoint(x: 0.5, y: 0.62)
+                    )
+                )
+            }
+            .overlay {
+                shape.strokeBorder(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(scheme == .dark ? 0.18 : 0.65),
+                            Color.white.opacity(scheme == .dark ? 0.04 : 0.18)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+            }
+            .shadow(color: .black.opacity(scheme == .dark ? 0.16 : 0.05), radius: 12, y: 5)
+    }
+}
+
+private struct BRSquareCard: ViewModifier {
+    var enabled: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if enabled {
+            content.aspectRatio(1, contentMode: .fit)
+        } else {
+            content
+        }
+    }
+}
+
+struct BRInset: ViewModifier {
+    var radius: CGFloat = BR.field
+    @Environment(\.colorScheme) private var scheme
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+        content
+            .background {
+                shape.fill(Color.primary.opacity(scheme == .dark ? 0.07 : 0.045))
+            }
+            .overlay {
+                shape.strokeBorder(Color.primary.opacity(scheme == .dark ? 0.08 : 0.06), lineWidth: 1)
+            }
+    }
+}
+
+struct BRCardHeader: View {
+    @Binding var title: String
+    var prompt: String = "Имя"
+    var titleDisabled: Bool = false
+    var hash: String
+    var onDelete: (() -> Void)? = nil
+
+    var body: some View {
+        HStack(spacing: 10) {
+            TextField(prompt, text: $title)
+                .font(.title3.weight(.semibold))
+                .textFieldStyle(.plain)
+                .disabled(titleDisabled)
+            Spacer(minLength: 8)
+            HashCapsule(hash: hash)
+            if let onDelete {
+                IconCircleButton(systemName: "trash", role: .destructive, action: onDelete)
+            }
+        }
     }
 }
 
@@ -173,40 +269,39 @@ struct BRSelect<Value: Hashable>: View {
     @State private var ignoreToggleUntil = Date.distantPast
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            VStack(alignment: .leading, spacing: 8) {
-                if !title.isEmpty {
-                    Text(title)
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.secondary)
-                }
-                Button(action: toggleOpen) {
-                    HStack(spacing: 8) {
-                        Text(label(selection))
-                            .font(.body.weight(.medium))
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-                        Spacer(minLength: 4)
-                        Image(systemName: "chevron.down")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .rotationEffect(.degrees(isOpen ? 180 : 0))
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 9)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .brSurface(radius: 14, interactive: false)
+        VStack(alignment: .leading, spacing: 8) {
+            if !title.isEmpty {
+                Text(title)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
             }
+            Button(action: toggleOpen) {
+                HStack(spacing: 8) {
+                    Text(label(selection))
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isOpen ? 180 : 0))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .modifier(BRInset(radius: 14))
+            .brNoFocusRing()
+        }
+        .overlay(alignment: .topLeading) {
             if isOpen {
                 menu
-                    .offset(y: title.isEmpty ? 44 : 70)
-                    .transition(.opacity)
+                    .offset(y: title.isEmpty ? 42 : 66)
             }
         }
-        .preference(key: BRSelectOpenPreference.self, value: isOpen)
-        .zIndex(isOpen ? 20 : 0)
+        .zIndex(isOpen ? 40 : 0)
         .onAppear {
             if forceExpanded {
                 expanded = true
@@ -233,7 +328,7 @@ struct BRSelect<Value: Hashable>: View {
                         if option == selection {
                             Image(systemName: "checkmark")
                                 .font(.caption.weight(.bold))
-                                .foregroundStyle(.tint)
+                                .foregroundStyle(.secondary)
                         }
                     }
                     .padding(.horizontal, 10)
@@ -241,43 +336,40 @@ struct BRSelect<Value: Hashable>: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
                     .background(
-                        option == selection ? Color.accentColor.opacity(0.18) : Color.clear,
+                        option == selection ? Color.primary.opacity(0.08) : Color.clear,
                         in: RoundedRectangle(cornerRadius: 10, style: .continuous)
                     )
                 }
                 .buttonStyle(.plain)
+                .brNoFocusRing()
             }
         }
         .padding(6)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.regularMaterial)
+                .fill(.ultraThinMaterial)
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(scheme == .dark ? Color.black.opacity(0.5) : Color.white.opacity(0.92))
+                .fill(scheme == .dark ? Color.black.opacity(0.22) : Color.white.opacity(0.78))
         }
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.1), lineWidth: 1)
+                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
         }
-        .shadow(color: .black.opacity(0.28), radius: 16, y: 8)
+        .shadow(color: .black.opacity(scheme == .dark ? 0.18 : 0.08), radius: 8, y: 3)
     }
 
     private func toggleOpen() {
         let now = Date()
         guard now >= ignoreToggleUntil else { return }
         ignoreToggleUntil = now.addingTimeInterval(0.4)
-        withAnimation(.easeOut(duration: 0.18)) {
-            expanded.toggle()
-        }
+        expanded.toggle()
     }
 
     private func pick(_ value: Value) {
         ignoreToggleUntil = Date().addingTimeInterval(0.4)
         selection = value
-        withAnimation(.easeOut(duration: 0.16)) {
-            expanded = false
-        }
+        expanded = false
     }
 }
 
@@ -293,13 +385,13 @@ struct FullRowButtonStyle: ButtonStyle {
 struct GlassCard<Content: View>: View {
     var padding: CGFloat = 20
     var radius: CGFloat = BR.card
+    var square: Bool = false
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-        content()
-            .padding(padding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .brSurface(radius: radius)
+        BRCard(padding: padding, radius: radius, square: square) {
+            content()
+        }
     }
 }
 
@@ -328,7 +420,7 @@ struct BRField: View {
             .font(.body)
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .brSurface(radius: BR.field, interactive: false)
+            .modifier(BRInset(radius: BR.field))
         }
     }
 }
@@ -347,6 +439,7 @@ struct IconCircleButton: View {
         .brGlass()
         .buttonBorderShape(.circle)
         .controlSize(.small)
+        .brNoFocusRing()
     }
 }
 

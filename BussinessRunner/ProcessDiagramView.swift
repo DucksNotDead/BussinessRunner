@@ -27,20 +27,19 @@ struct ProcessDiagramView: View {
                         .font(.subheadline.weight(.semibold))
                         .padding(.top, 8)
                     ForEach(process.logicBlocks) { block in
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(block.title).font(.subheadline.weight(.medium))
-                            let linked = process.actions.filter { block.actionIDs.contains($0.id) }
-                            if linked.isEmpty {
-                                Text("нет связанных действий").foregroundStyle(.secondary).font(.caption)
-                            } else {
-                                ForEach(linked) { action in
-                                    Text(action.text).font(.caption)
+                        BRCard(padding: 14, radius: 18, tint: .orange) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(block.title).font(.subheadline.weight(.medium))
+                                let linked = process.actions.filter { block.actionIDs.contains($0.id) }
+                                if linked.isEmpty {
+                                    Text("нет связанных действий").foregroundStyle(.secondary).font(.caption)
+                                } else {
+                                    ForEach(linked) { action in
+                                        Text(action.text).font(.caption)
+                                    }
                                 }
                             }
                         }
-                        .padding(14)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .brSurface(radius: 18, tint: .orange.opacity(0.35))
                     }
                 }
 
@@ -48,14 +47,14 @@ struct ProcessDiagramView: View {
                 if !nested.isEmpty {
                     Text("Вложенные").font(.subheadline.weight(.semibold))
                     ForEach(nested) { child in
-                        HStack {
-                            Image(systemName: "arrow.triangle.branch")
-                            Text(child.name)
-                            Spacer()
-                            HashCapsule(hash: child.hash)
+                        BRCard(padding: 12, radius: 16) {
+                            HStack {
+                                Image(systemName: "arrow.triangle.branch")
+                                Text(child.name)
+                                Spacer()
+                                HashCapsule(hash: child.hash)
+                            }
                         }
-                        .padding(12)
-                        .brSurface(radius: 16, interactive: false)
                     }
                 }
 
@@ -71,16 +70,15 @@ struct ProcessDiagramView: View {
 
     private func diagramNode(index: Int, action: ProcessAction) -> some View {
         let mentions = action.links.map(Mention.init)
-        return VStack(alignment: .leading, spacing: 10) {
-            Text("\(index + 1). \(action.text.isEmpty ? "пустое действие" : action.text)")
-                .font(.body)
-            if !mentions.isEmpty {
-                FlexibleMentionRow(mentions: mentions)
+        return BRCard(padding: 16, radius: 20) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("\(index + 1). \(action.text.isEmpty ? "пустое действие" : action.text)")
+                    .font(.body)
+                if !mentions.isEmpty {
+                    FlexibleMentionRow(mentions: mentions)
+                }
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .brSurface(radius: 20)
     }
 }
 

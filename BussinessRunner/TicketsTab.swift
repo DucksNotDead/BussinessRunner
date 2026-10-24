@@ -8,7 +8,7 @@ struct TicketsTab: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 ForEach(project.tickets.sorted(by: { $0.createdAt > $1.createdAt })) { ticket in
-                    GlassCard {
+                    BRCard {
                         VStack(alignment: .leading, spacing: 10) {
                             HStack(spacing: 10) {
                                 TicketKindBadge(kind: ticket.kind)

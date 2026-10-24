@@ -8,26 +8,24 @@ struct EntitiesTab: View {
             VStack(alignment: .leading, spacing: 18) {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 320), spacing: 16)], spacing: 16) {
                     ForEach($project.entities) { $entity in
-                        GlassCard {
+                        BRCard {
                             VStack(alignment: .leading, spacing: 12) {
-                                HStack {
-                                    TextField("Entity", text: $entity.name)
-                                        .font(.title3.weight(.semibold))
-                                        .textFieldStyle(.plain)
-                                        .disabled(entity.name == "User")
-                                    Spacer()
-                                    HashCapsule(hash: entity.hash)
-                                }
+                                BRCardHeader(
+                                    title: $entity.name,
+                                    prompt: "Entity",
+                                    titleDisabled: entity.name == "User",
+                                    hash: entity.hash
+                                )
                                 ForEach($entity.fields) { $field in
                                     HStack(spacing: 8) {
                                         TextField("поле", text: $field.name)
                                             .textFieldStyle(.plain)
                                             .padding(8)
-                                            .brSurface(radius: 10, interactive: false)
+                                            .modifier(BRInset(radius: 10))
                                         TextField("тип", text: $field.type)
                                             .textFieldStyle(.plain)
                                             .padding(8)
-                                            .brSurface(radius: 10, interactive: false)
+                                            .modifier(BRInset(radius: 10))
                                             .frame(width: 110)
                                         IconCircleButton(systemName: "xmark", role: .destructive) {
                                             entity.fields.removeAll { $0.id == field.id }
@@ -58,18 +56,13 @@ struct RolesTab: View {
     var body: some View {
         catalogList {
             ForEach($project.roles) { $role in
-                GlassCard {
+                BRCard {
                     VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            TextField("Имя", text: $role.name)
-                                .font(.title3.weight(.semibold))
-                                .textFieldStyle(.plain)
-                            Spacer()
-                            HashCapsule(hash: role.hash)
-                            IconCircleButton(systemName: "trash", role: .destructive) {
-                                project.roles.removeAll { $0.id == role.id }
-                            }
-                        }
+                        BRCardHeader(
+                            title: $role.name,
+                            hash: role.hash,
+                            onDelete: { project.roles.removeAll { $0.id == role.id } }
+                        )
                         BRField(label: "Описание", prompt: "что делает роль", text: $role.description, axis: .vertical)
                     }
                 }
@@ -84,18 +77,13 @@ struct RulesTab: View {
     var body: some View {
         catalogList {
             ForEach($project.rules) { $rule in
-                GlassCard {
+                BRCard {
                     VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            TextField("Имя", text: $rule.name)
-                                .font(.title3.weight(.semibold))
-                                .textFieldStyle(.plain)
-                            Spacer()
-                            HashCapsule(hash: rule.hash)
-                            IconCircleButton(systemName: "trash", role: .destructive) {
-                                project.rules.removeAll { $0.id == rule.id }
-                            }
-                        }
+                        BRCardHeader(
+                            title: $rule.name,
+                            hash: rule.hash,
+                            onDelete: { project.rules.removeAll { $0.id == rule.id } }
+                        )
                         BRField(label: "Текст", prompt: "правило", text: $rule.body, axis: .vertical)
                     }
                 }

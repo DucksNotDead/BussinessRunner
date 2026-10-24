@@ -31,29 +31,28 @@ struct ProcessesTab: View {
                         Button {
                             workspace.editingProcessID = process.id
                         } label: {
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Text(process.name)
-                                        .font(.body.weight(.semibold))
-                                        .foregroundStyle(.primary)
-                                    Spacer()
-                                    if process.isCritical {
-                                        Image(systemName: "flag.fill")
-                                            .foregroundStyle(.red)
-                                            .font(.caption)
+                            BRCard(padding: 12, radius: 18) {
+                                HStack(alignment: .top, spacing: 10) {
+                                    Capsule()
+                                        .fill(workspace.editingProcessID == process.id ? Color.accentColor.opacity(0.85) : Color.clear)
+                                        .frame(width: 3, height: 28)
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        HStack {
+                                            Text(process.name)
+                                                .font(.body.weight(workspace.editingProcessID == process.id ? .semibold : .regular))
+                                                .foregroundStyle(.primary)
+                                            Spacer()
+                                            if process.isCritical {
+                                                Image(systemName: "flag.fill")
+                                                    .foregroundStyle(.red)
+                                                    .font(.caption)
+                                            }
+                                        }
+                                        HashCapsule(hash: process.hash)
                                     }
                                 }
-                                HashCapsule(hash: process.hash)
                             }
-                            .padding(12)
-                            .frame(maxWidth: .infinity, alignment: .leading)
                             .contentShape(Rectangle())
-                            .background(
-                                workspace.editingProcessID == process.id
-                                    ? Color.primary.opacity(0.10)
-                                    : Color.primary.opacity(0.04),
-                                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            )
                         }
                         .buttonStyle(FullRowButtonStyle())
                         .contextMenu {

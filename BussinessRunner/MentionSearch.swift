@@ -20,7 +20,7 @@ struct ActionMentionField: View {
                 .textFieldStyle(.plain)
                 .lineLimit(2...4)
                 .padding(10)
-                .brSurface(radius: 14, interactive: false)
+                .modifier(BRInset(radius: 14))
                 .onChange(of: action.text) { _, newValue in
                     if let token = MentionScan.activeToken(in: newValue) {
                         withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
@@ -96,7 +96,14 @@ struct ActionMentionField: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .brSurface(radius: 16, interactive: false)
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.ultraThinMaterial)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+        }
     }
 
     private func candidates(kind: MentionKind, query: String) -> [MentionCandidate] {
