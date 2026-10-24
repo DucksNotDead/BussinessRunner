@@ -55,7 +55,7 @@ struct CanvasView: View {
                     .lineLimit(1)
             }
             if !isCurrentTabEmpty {
-                OutlinedPlusButton(size: 48, help: addHelp, action: addInCurrentTab)
+                OutlinedPlusButton(size: 36, help: addHelp, action: addInCurrentTab)
             }
         }
         .padding(.horizontal, 28)

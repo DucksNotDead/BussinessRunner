@@ -28,6 +28,7 @@ struct ProcessEditorView: View {
                         }
                         .toggleStyle(.switch)
                         .controlSize(.small)
+                        .brPointer()
                         HashCapsule(hash: process.hash)
                     }
                 }
@@ -88,6 +89,7 @@ struct ProcessEditorView: View {
                                     .modifier(BRInset(radius: 12))
                                 ForEach(process.actions) { action in
                                     Toggle(action.text.isEmpty ? "пустое действие" : action.text, isOn: bindingFor(blockID: block.id, actionID: action.id))
+                                        .brPointer()
                                 }
                             }
                         }
@@ -110,6 +112,7 @@ struct ProcessEditorView: View {
                         } else {
                             ForEach(others) { other in
                                 Toggle(other.name, isOn: nestedBinding(other.id))
+                                    .brPointer()
                             }
                         }
                     }

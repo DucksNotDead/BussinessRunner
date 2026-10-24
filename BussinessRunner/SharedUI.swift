@@ -1,4 +1,10 @@
+import AppKit
 import SwiftUI
+
+@MainActor
+final class BRSelectSession: ObservableObject {
+    @Published var openID: UUID?
+}
 
 enum BR {
     static let card: CGFloat = 24
@@ -75,8 +81,15 @@ struct BRSurface: ViewModifier {
 }
 
 extension View {
+    func brPointer() -> some View {
+        background {
+            PointerCursor()
+                .allowsHitTesting(false)
+        }
+    }
+
     func brNoFocusRing() -> some View {
-        self.focusable(false).focusEffectDisabled()
+        self.focusable(false).focusEffectDisabled().brPointer()
     }
 
     func brSurface(radius: CGFloat = BR.card, interactive: Bool = true, tint: Color? = nil, apply: Bool = true) -> some View {
@@ -86,18 +99,18 @@ extension View {
     @ViewBuilder
     func brGlassProminent() -> some View {
         if SnapshotExport.requestedDirectory != nil {
-            self.buttonStyle(.borderedProminent)
+            self.buttonStyle(.borderedProminent).brPointer()
         } else {
-            self.buttonStyle(.glassProminent)
+            self.buttonStyle(.glassProminent).brPointer()
         }
     }
 
     @ViewBuilder
     func brGlass() -> some View {
         if SnapshotExport.requestedDirectory != nil {
-            self.buttonStyle(.bordered)
+            self.buttonStyle(.bordered).brPointer()
         } else {
-            self.buttonStyle(.glass)
+            self.buttonStyle(.glass).brPointer()
         }
     }
 
@@ -114,23 +127,25 @@ extension View {
 }
 
 struct OutlinedPlusButton: View {
-    var size: CGFloat = 44
+    var size: CGFloat = 36
     var help: String = "Добавить"
     var lineWidth: CGFloat = 1.5
     var action: () -> Void
 
     var body: some View {
         Button(action: action) {
+            let circle = size * 0.72
             Image(systemName: "plus")
-                .font(.system(size: size * 0.42, weight: .semibold))
+                .font(.system(size: circle * 0.46, weight: .semibold))
+                .foregroundStyle(.primary)
+                .frame(width: circle, height: circle)
+                .overlay(
+                    Circle().strokeBorder(Color.primary, lineWidth: lineWidth)
+                )
                 .frame(width: size, height: size)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .foregroundStyle(.primary)
-        .overlay(
-            Circle().strokeBorder(Color.primary.opacity(0.32), lineWidth: lineWidth)
-        )
         .brNoFocusRing()
         .help(help)
     }
@@ -264,8 +279,9 @@ struct BRSelect<Value: Hashable>: View {
     var label: (Value) -> String
     var forceExpanded: Bool = false
     @Binding var selection: Value
+    @EnvironmentObject private var selectSession: BRSelectSession
     @Environment(\.colorScheme) private var scheme
-    @State private var expanded = false
+    @State private var identity = UUID()
     @State private var ignoreToggleUntil = Date.distantPast
 
     var body: some View {
@@ -304,75 +320,122 @@ struct BRSelect<Value: Hashable>: View {
         .zIndex(isOpen ? 40 : 0)
         .onAppear {
             if forceExpanded {
-                expanded = true
+                selectSession.openID = identity
             }
         }
         .onChange(of: forceExpanded) { _, next in
-            expanded = next
+            if next {
+                selectSession.openID = identity
+            } else if selectSession.openID == identity {
+                selectSession.openID = nil
+            }
         }
     }
 
-    private var isOpen: Bool { expanded || forceExpanded }
+    private var isOpen: Bool { forceExpanded || selectSession.openID == identity }
 
-    private var menu: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 2) {
-                ForEach(options, id: \.self) { option in
-                    Button {
-                        pick(option)
-                    } label: {
-                        HStack(spacing: 8) {
-                            Text(label(option))
-                                .foregroundStyle(.primary)
-                                .lineLimit(1)
-                            Spacer(minLength: 4)
-                            if option == selection {
-                                Image(systemName: "checkmark")
-                                    .font(.caption.weight(.bold))
-                                    .foregroundStyle(.secondary)
-                            }
+    private var menuRows: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(options, id: \.self) { option in
+                Button {
+                    pick(option)
+                } label: {
+                    HStack(spacing: 8) {
+                        Text(label(option))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                        Spacer(minLength: 4)
+                        if option == selection {
+                            Image(systemName: "checkmark")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(.secondary)
                         }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
-                        .background(
-                            option == selection ? Color.primary.opacity(0.08) : Color.clear,
-                            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        )
                     }
-                    .buttonStyle(.plain)
-                    .brNoFocusRing()
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .background(
+                        option == selection ? Color.primary.opacity(0.08) : Color.clear,
+                        in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    )
                 }
+                .buttonStyle(.plain)
+                .brNoFocusRing()
             }
         }
-        .frame(height: min(CGFloat(options.count) * 38 + 8, 280))
+    }
+
+    private var menu: some View {
+        Group {
+            if options.count > 8 {
+                ScrollView {
+                    menuRows
+                }
+                .frame(height: 8 * 36)
+            } else {
+                menuRows
+            }
+        }
         .padding(6)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.ultraThinMaterial)
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(scheme == .dark ? Color.black.opacity(0.22) : Color.white.opacity(0.78))
+            ZStack {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(scheme == .dark ? Color.black.opacity(0.28) : Color.white.opacity(0.18))
+                    .blur(radius: 18)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(.regularMaterial)
+            }
         }
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
         }
-        .shadow(color: .black.opacity(scheme == .dark ? 0.18 : 0.08), radius: 8, y: 3)
+        .shadow(color: .black.opacity(scheme == .dark ? 0.22 : 0.10), radius: 12, y: 4)
     }
 
     private func toggleOpen() {
         let now = Date()
         guard now >= ignoreToggleUntil else { return }
         ignoreToggleUntil = now.addingTimeInterval(0.4)
-        expanded.toggle()
+        if selectSession.openID == identity {
+            selectSession.openID = nil
+        } else {
+            selectSession.openID = identity
+        }
     }
 
     private func pick(_ value: Value) {
         ignoreToggleUntil = Date().addingTimeInterval(0.4)
         selection = value
-        expanded = false
+        selectSession.openID = nil
+    }
+}
+
+private struct PointerCursor: NSViewRepresentable {
+    func makeNSView(context: Context) -> PointerCursorView {
+        PointerCursorView()
+    }
+
+    func updateNSView(_ nsView: PointerCursorView, context: Context) {
+        nsView.window?.invalidateCursorRects(for: nsView)
+    }
+}
+
+private final class PointerCursorView: NSView {
+    override func resetCursorRects() {
+        addCursorRect(bounds, cursor: .pointingHand)
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        window?.invalidateCursorRects(for: self)
+    }
+
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
+        window?.invalidateCursorRects(for: self)
     }
 }
 

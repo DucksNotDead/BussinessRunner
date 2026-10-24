@@ -102,6 +102,7 @@ private struct ProjectTabItem: View {
         }
         .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         .onTapGesture(perform: onSelect)
+        .brPointer()
         .help(project.repoPath.isEmpty ? project.name : project.repoPath)
         .contextMenu {
             Button("Закрыть вкладку", action: onClose)

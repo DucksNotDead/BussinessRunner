@@ -3,6 +3,7 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject private var workspace: Workspace
+    @StateObject private var selectSession = BRSelectSession()
 
     var body: some View {
         HStack(spacing: 0) {
@@ -26,6 +27,7 @@ struct RootView: View {
             }
         }
         .ignoresSafeArea(.container, edges: .top)
+        .environmentObject(selectSession)
         .background(WindowChrome())
         .focusEffectDisabled()
         .sheet(isPresented: $workspace.presentBugSheet) {
@@ -41,6 +43,7 @@ struct RootView: View {
                         .padding(.vertical, 10)
                         .brCapsule(tint: .green.opacity(0.35))
                         .onTapGesture { workspace.saveMessage = nil }
+                        .brPointer()
                 }
                 if workspace.selectedProject != nil {
                     ChangesBar()

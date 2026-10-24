@@ -55,6 +55,7 @@ struct ProcessesTab: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(FullRowButtonStyle())
+                        .brPointer()
                         .contextMenu {
                             Button("Удалить", role: .destructive) {
                                 project.processes.removeAll { $0.id == process.id }

@@ -30,6 +30,7 @@ struct ChangesBar: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .brNoFocusRing()
 
                 if workspace.changesBarExpanded {
                     expandedList(changes)
