@@ -35,9 +35,10 @@ struct BussinessRunnerApp: App {
             RootView()
                 .environmentObject(workspace)
                 .frame(minWidth: 1180, minHeight: 760)
+                .toolbar(removing: .title)
+                .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         }
         .windowStyle(.hiddenTitleBar)
-        .windowToolbarStyle(.unified)
         .defaultSize(width: 1380, height: 860)
         .commands {
             CommandGroup(replacing: .newItem) {

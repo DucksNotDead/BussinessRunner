@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct RootView: View {
@@ -24,6 +25,8 @@ struct RootView: View {
                 }
             }
         }
+        .ignoresSafeArea(.container, edges: .top)
+        .background(WindowChrome())
         .focusEffectDisabled()
         .sheet(isPresented: $workspace.presentBugSheet) {
             BugComposerSheet()
@@ -85,9 +88,9 @@ struct CanvasSidebar: View {
             Text("Канва")
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
-                .padding(.horizontal, 20)
-                .padding(.top, 40)
-                .padding(.bottom, 8)
+                .padding(.leading, 78)
+                .padding(.trailing, 20)
+                .frame(height: 44, alignment: .center)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 2) {
@@ -138,6 +141,27 @@ struct CanvasSidebar: View {
         }
         .buttonStyle(.plain)
         .brNoFocusRing()
+    }
+}
+
+private struct WindowChrome: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async { Self.apply(view) }
+        return view
+    }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        Self.apply(view)
+    }
+
+    private static func apply(_ view: NSView) {
+        guard let window = view.window else { return }
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.titlebarSeparatorStyle = .none
+        window.toolbar = nil
+        window.isMovableByWindowBackground = true
     }
 }
 
