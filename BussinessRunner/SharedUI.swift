@@ -6,6 +6,13 @@ final class BRSelectSession: ObservableObject {
     @Published var openID: UUID?
 }
 
+struct BRSelectOpenKey: PreferenceKey {
+    static var defaultValue = false
+    static func reduce(value: inout Bool, nextValue: () -> Bool) {
+        value = value || nextValue()
+    }
+}
+
 enum BR {
     static let card: CGFloat = 24
     static let chip: CGFloat = 14
@@ -204,8 +211,6 @@ struct BRCard<Content: View>: View {
                         endPoint: UnitPoint(x: 0.5, y: 0.62)
                     )
                 )
-            }
-            .overlay {
                 shape.strokeBorder(
                     LinearGradient(
                         colors: [
@@ -318,6 +323,7 @@ struct BRSelect<Value: Hashable>: View {
             }
         }
         .zIndex(isOpen ? 40 : 0)
+        .preference(key: BRSelectOpenKey.self, value: isOpen)
         .onAppear {
             if forceExpanded {
                 selectSession.openID = identity
@@ -380,19 +386,16 @@ struct BRSelect<Value: Hashable>: View {
         .padding(6)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            ZStack {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(scheme == .dark ? Color.black.opacity(0.28) : Color.white.opacity(0.18))
-                    .blur(radius: 18)
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(.regularMaterial)
-            }
+            let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+            shape.fill(scheme == .dark ? Color.black.opacity(0.52) : Color.white.opacity(0.78))
+            shape.fill(.regularMaterial)
         }
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+                .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
         }
-        .shadow(color: .black.opacity(scheme == .dark ? 0.22 : 0.10), radius: 12, y: 4)
+        .shadow(color: .black.opacity(scheme == .dark ? 0.28 : 0.12), radius: 14, y: 6)
     }
 
     private func toggleOpen() {

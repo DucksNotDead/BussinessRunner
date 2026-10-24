@@ -30,6 +30,7 @@ private struct PlatformCard: View {
     @Binding var platform: ProjectPlatform
     @Binding var project: Project
     var forceExpandFramework: Bool
+    @State private var selectOpen = false
 
     var body: some View {
         BRCard(padding: 18, square: true) {
@@ -75,5 +76,7 @@ private struct PlatformCard: View {
                 }
             }
         }
+        .onPreferenceChange(BRSelectOpenKey.self) { selectOpen = $0 }
+        .zIndex(selectOpen || forceExpandFramework ? 24 : 0)
     }
 }
