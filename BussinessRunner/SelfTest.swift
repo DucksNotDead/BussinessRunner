@@ -183,6 +183,47 @@ enum SelfTest {
         } catch HarnessWriter.HarnessError.noPlatform {
             // expected
         }
+
+        try assertCloseTabs()
+    }
+
+    private static func assertCloseTabs() throws {
+        let first = Project(name: "Первый", repoPath: "/tmp/one")
+        let second = Project(name: "Второй", repoPath: "/tmp/two")
+        let third = Project(name: "Третий", repoPath: "/tmp/three")
+        var projects = [first, second, third]
+        var selected: UUID? = first.id
+        var editing: UUID? = UUID()
+
+        ProjectTabs.close(second.id, projects: &projects, selectedID: &selected, editingProcessID: &editing)
+        guard projects.map(\.id) == [first.id, third.id], selected == first.id, editing != nil else {
+            throw TestError.message("closing a background tab must keep the selected project")
+        }
+
+        ProjectTabs.close(first.id, projects: &projects, selectedID: &selected, editingProcessID: &editing)
+        guard projects.map(\.id) == [third.id], selected == third.id else {
+            throw TestError.message("closing the selected tab must select the neighbor")
+        }
+
+        projects = [first, second, third]
+        selected = third.id
+        editing = UUID()
+        ProjectTabs.close(third.id, projects: &projects, selectedID: &selected, editingProcessID: &editing)
+        guard projects.map(\.id) == [first.id, second.id], selected == second.id else {
+            throw TestError.message("closing the last selected tab must select the previous")
+        }
+        projects = [third]
+        selected = third.id
+
+        ProjectTabs.close(third.id, projects: &projects, selectedID: &selected, editingProcessID: &editing)
+        guard projects.isEmpty, selected == nil, editing == nil else {
+            throw TestError.message("closing the last tab must clear selection")
+        }
+
+        ProjectTabs.close(first.id, projects: &projects, selectedID: &selected, editingProcessID: &editing)
+        guard projects.isEmpty, selected == nil else {
+            throw TestError.message("closing an unknown tab must be a no-op")
+        }
     }
 
     private static func assertExists(_ repo: URL, _ name: String) throws {

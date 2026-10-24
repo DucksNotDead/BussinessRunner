@@ -33,10 +33,16 @@ final class Workspace: ObservableObject {
     }
 
     var selectedProjectBinding: Binding<Project>? {
-        guard let id = selectedProjectID, let index = projects.firstIndex(where: { $0.id == id }) else { return nil }
+        guard let id = selectedProjectID, projects.contains(where: { $0.id == id }) else { return nil }
         return Binding(
-            get: { self.projects[index] },
-            set: { self.projects[index] = $0; self.persist() }
+            get: {
+                self.projects.first(where: { $0.id == id }) ?? Project(name: "", repoPath: "")
+            },
+            set: { updated in
+                guard let index = self.projects.firstIndex(where: { $0.id == id }) else { return }
+                self.projects[index] = updated
+                self.persist()
+            }
         )
     }
 
@@ -131,13 +137,7 @@ final class Workspace: ObservableObject {
     }
 
     func closeProject(_ id: UUID) {
-        guard let index = projects.firstIndex(where: { $0.id == id }) else { return }
-        projects.remove(at: index)
-        if selectedProjectID == id {
-            let next = projects.indices.contains(index) ? projects[index] : projects.last
-            selectedProjectID = next?.id
-            editingProcessID = next.flatMap { $0.processes.first?.id }
-        }
+        ProjectTabs.close(id, projects: &projects, selectedID: &selectedProjectID, editingProcessID: &editingProcessID)
         persist()
     }
 

@@ -4,15 +4,16 @@ struct RootView: View {
     @EnvironmentObject private var workspace: Workspace
 
     var body: some View {
-        VStack(spacing: 0) {
-            ProjectTabBar()
-            HStack(spacing: 0) {
-                CanvasSidebar()
-                    .frame(width: 240)
+        HStack(spacing: 0) {
+            CanvasSidebar()
+                .frame(width: 240)
+            VStack(spacing: 0) {
+                ProjectTabBar()
                 ZStack {
                     CanvasBackdrop()
-                    if workspace.selectedProjectBinding != nil {
+                    if let id = workspace.selectedProjectID, workspace.selectedProject != nil {
                         CanvasView()
+                            .id(id)
                     } else {
                         ContentUnavailableView(
                             "Создайте проект",
@@ -85,7 +86,7 @@ struct CanvasSidebar: View {
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 20)
-                .padding(.top, 16)
+                .padding(.top, 40)
                 .padding(.bottom, 8)
 
             ScrollView {

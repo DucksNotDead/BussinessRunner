@@ -310,6 +310,23 @@ enum MentionScan {
     }
 }
 
+enum ProjectTabs {
+    static func close(
+        _ id: UUID,
+        projects: inout [Project],
+        selectedID: inout UUID?,
+        editingProcessID: inout UUID?
+    ) {
+        guard let index = projects.firstIndex(where: { $0.id == id }) else { return }
+        let wasSelected = selectedID == id
+        projects.remove(at: index)
+        guard wasSelected else { return }
+        let next = projects.indices.contains(index) ? projects[index] : projects.last
+        selectedID = next?.id
+        editingProcessID = next.flatMap { $0.processes.first?.id }
+    }
+}
+
 enum ProjectFactory {
     static func make(name: String, repoPath: String) -> Project {
         var project = Project(name: name, repoPath: repoPath)

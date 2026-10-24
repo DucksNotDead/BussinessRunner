@@ -7,7 +7,6 @@ struct ProjectTabBar: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Color.clear.frame(width: 70)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 3) {
                     ForEach(workspace.projects) { project in
@@ -19,7 +18,11 @@ struct ProjectTabBar: View {
                                 workspace.selectedProjectID = project.id
                             },
                             onClose: {
-                                workspace.closeProject(project.id)
+                                let id = project.id
+                                hoveredID = nil
+                                Task { @MainActor in
+                                    workspace.closeProject(id)
+                                }
                             }
                         )
                         .onHover { inside in
@@ -41,6 +44,7 @@ struct ProjectTabBar: View {
             Spacer(minLength: 8)
             connectionDot
         }
+        .padding(.leading, 10)
         .padding(.trailing, 14)
         .frame(height: 44)
         .background {
@@ -129,5 +133,6 @@ private struct ProjectTabItem: View {
         .contextMenu {
             Button("Закрыть вкладку", action: onClose)
         }
+        .id(project.id)
     }
 }
