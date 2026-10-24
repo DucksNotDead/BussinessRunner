@@ -109,21 +109,49 @@ extension View {
     }
 }
 
-struct AddCapsuleButton: View {
-    var title: String = "Добавить"
-    var help: String = ""
+struct OutlinedPlusButton: View {
+    var size: CGFloat = 44
+    var help: String = "Добавить"
+    var lineWidth: CGFloat = 1.5
     var action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .font(.body.weight(.semibold))
-                .padding(.horizontal, 6)
+            Image(systemName: "plus")
+                .font(.system(size: size * 0.42, weight: .semibold))
+                .frame(width: size, height: size)
+                .contentShape(Circle())
         }
-        .buttonBorderShape(.capsule)
-        .controlSize(.regular)
-        .brGlassProminent()
+        .buttonStyle(.plain)
+        .foregroundStyle(.primary)
+        .overlay(
+            Circle().strokeBorder(Color.primary.opacity(0.32), lineWidth: lineWidth)
+        )
         .help(help)
+    }
+}
+
+struct EmptyTabHero: View {
+    var title: String
+    var detail: String
+    var action: () -> Void
+
+    var body: some View {
+        VStack(spacing: 22) {
+            VStack(spacing: 8) {
+                Text(title)
+                    .font(.title2.weight(.semibold))
+                    .multilineTextAlignment(.center)
+                Text(detail)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 440)
+            }
+            OutlinedPlusButton(size: 96, help: "Добавить", lineWidth: 2, action: action)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(28)
     }
 }
 
@@ -140,79 +168,43 @@ struct BRSelect<Value: Hashable>: View {
     var label: (Value) -> String
     var forceExpanded: Bool = false
     @Binding var selection: Value
+    @Environment(\.colorScheme) private var scheme
     @State private var expanded = false
+    @State private var ignoreToggleUntil = Date.distantPast
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if !title.isEmpty {
-                Text(title)
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-            }
-            Button {
-                withAnimation(.spring(response: 0.34, dampingFraction: 0.78)) {
-                    expanded.toggle()
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Text(label(selection))
-                        .font(.body.weight(.medium))
-                        .foregroundStyle(.primary)
-                        .lineLimit(1)
-                    Spacer(minLength: 4)
-                    Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold))
+        ZStack(alignment: .topLeading) {
+            VStack(alignment: .leading, spacing: 8) {
+                if !title.isEmpty {
+                    Text(title)
+                        .font(.caption.weight(.medium))
                         .foregroundStyle(.secondary)
-                        .rotationEffect(.degrees(isOpen ? 180 : 0))
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 9)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .brSurface(radius: 14)
-
-            if isOpen {
-                VStack(alignment: .leading, spacing: 2) {
-                    ForEach(options, id: \.self) { option in
-                        Button {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
-                                selection = option
-                                expanded = false
-                            }
-                        } label: {
-                            HStack(spacing: 8) {
-                                Text(label(option))
-                                    .foregroundStyle(.primary)
-                                    .lineLimit(1)
-                                Spacer(minLength: 4)
-                                if option == selection {
-                                    Image(systemName: "checkmark")
-                                        .font(.caption.weight(.bold))
-                                        .foregroundStyle(.tint)
-                                }
-                            }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .contentShape(Rectangle())
-                            .background(
-                                option == selection ? Color.accentColor.opacity(0.18) : Color.clear,
-                                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            )
-                        }
-                        .buttonStyle(.plain)
+                Button(action: toggleOpen) {
+                    HStack(spacing: 8) {
+                        Text(label(selection))
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                        Spacer(minLength: 4)
+                        Image(systemName: "chevron.down")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .rotationEffect(.degrees(isOpen ? 180 : 0))
                     }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .contentShape(Rectangle())
                 }
-                .padding(6)
-                .brSurface(radius: 16, interactive: false)
-                .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .top)),
-                    removal: .opacity
-                ))
+                .buttonStyle(.plain)
+                .brSurface(radius: 14, interactive: false)
+            }
+            if isOpen {
+                menu
+                    .offset(y: title.isEmpty ? 44 : 70)
+                    .transition(.opacity)
             }
         }
-        .animation(.spring(response: 0.34, dampingFraction: 0.78), value: isOpen)
         .preference(key: BRSelectOpenPreference.self, value: isOpen)
         .zIndex(isOpen ? 20 : 0)
         .onAppear {
@@ -226,6 +218,67 @@ struct BRSelect<Value: Hashable>: View {
     }
 
     private var isOpen: Bool { expanded || forceExpanded }
+
+    private var menu: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(options, id: \.self) { option in
+                Button {
+                    pick(option)
+                } label: {
+                    HStack(spacing: 8) {
+                        Text(label(option))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                        Spacer(minLength: 4)
+                        if option == selection {
+                            Image(systemName: "checkmark")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(.tint)
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .background(
+                        option == selection ? Color.accentColor.opacity(0.18) : Color.clear,
+                        in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(6)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.regularMaterial)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(scheme == .dark ? Color.black.opacity(0.5) : Color.white.opacity(0.92))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.1), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.28), radius: 16, y: 8)
+    }
+
+    private func toggleOpen() {
+        let now = Date()
+        guard now >= ignoreToggleUntil else { return }
+        ignoreToggleUntil = now.addingTimeInterval(0.4)
+        withAnimation(.easeOut(duration: 0.18)) {
+            expanded.toggle()
+        }
+    }
+
+    private func pick(_ value: Value) {
+        ignoreToggleUntil = Date().addingTimeInterval(0.4)
+        selection = value
+        withAnimation(.easeOut(duration: 0.16)) {
+            expanded = false
+        }
+    }
 }
 
 struct FullRowButtonStyle: ButtonStyle {

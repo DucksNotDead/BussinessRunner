@@ -49,6 +49,15 @@ enum SnapshotExport {
         write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("08-changes-bar.png"))
         workspace.changesBarExpanded = false
 
+        if let id = workspace.selectedProjectID,
+           let index = workspace.projects.firstIndex(where: { $0.id == id }) {
+            let saved = workspace.projects[index]
+            workspace.projects[index].platforms = []
+            workspace.selectedTab = .platforms
+            write(RootView().environmentObject(workspace), size: size, to: directory.appendingPathComponent("09-empty-tab.png"))
+            workspace.projects[index] = saved
+        }
+
         print("SNAPSHOT_OK \(directory.path)")
     }
 

@@ -6,7 +6,7 @@ struct ChangesBar: View {
 
     var body: some View {
         let changes = currentChanges
-        HStack(alignment: .bottom, spacing: 12) {
+        HStack(alignment: workspace.changesBarExpanded ? .bottom : .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 0) {
                 Button {
                     withAnimation(.spring(response: 0.36, dampingFraction: 0.8)) {
@@ -26,6 +26,7 @@ struct ChangesBar: View {
                             .rotationEffect(.degrees(workspace.changesBarExpanded ? 180 : 0))
                     }
                     .foregroundStyle(.primary)
+                    .frame(minHeight: workspace.changesBarExpanded ? 0 : 32)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)

@@ -15,7 +15,7 @@ struct ProcessesTab: View {
                 ContentUnavailableView(
                     "Процесс",
                     systemImage: "point.3.connected.trianglepath.dotted",
-                    description: Text("Выберите процесс слева или нажмите «Добавить» в заголовке.")
+                    description: Text("Выберите процесс слева или нажмите + в заголовке.")
                 )
             }
         }
@@ -48,9 +48,11 @@ struct ProcessesTab: View {
                             .padding(12)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .contentShape(Rectangle())
-                            .brSurface(
-                                radius: 18,
-                                tint: workspace.editingProcessID == process.id ? .accentColor : nil
+                            .background(
+                                workspace.editingProcessID == process.id
+                                    ? Color.primary.opacity(0.10)
+                                    : Color.primary.opacity(0.04),
+                                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
                             )
                         }
                         .buttonStyle(FullRowButtonStyle())

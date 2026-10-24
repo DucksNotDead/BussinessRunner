@@ -171,6 +171,34 @@ enum CanvasTab: String, CaseIterable, Identifiable {
         case .tickets: return "ticket"
         }
     }
+
+    var emptyTitle: String {
+        switch self {
+        case .platforms: return "Целевые платформы продукта"
+        case .entities: return "Сущности модели данных"
+        case .roles: return "Роли участников"
+        case .rules: return "Пользовательские правила"
+        case .processes: return "Процессы, которые ведёт PM"
+        case .tickets: return "Тикеты process, bug и migration"
+        }
+    }
+
+    var emptyDetail: String {
+        switch self {
+        case .platforms:
+            return "Закрытый список: web:api, web:ui, ios, android, macos, windows. Без платформы тикеты не создаются и не принимаются."
+        case .entities:
+            return "User есть всегда. Остальные сущности заводятся здесь."
+        case .roles:
+            return "Необязательно — вкладку можно оставить пустой. У каждой роли будет хеш после Save."
+        case .rules:
+            return "Необязательно. Агент следует им только там, где они не противоречат readme."
+        case .processes:
+            return "Нужен хотя бы один процесс, чтобы Save записал harness. Действия связываются через _ ! ? \"\"\"."
+        case .tickets:
+            return "process и migration появляются при Save. Баг заводится здесь. Без платформы тикет не принимается."
+        }
+    }
 }
 
 struct PendingChange: Identifiable, Equatable {

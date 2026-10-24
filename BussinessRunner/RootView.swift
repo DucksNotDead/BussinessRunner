@@ -17,7 +17,7 @@ struct RootView: View {
                         ContentUnavailableView(
                             "Создайте проект",
                             systemImage: "square.dashed",
-                            description: Text("Новый проект откроет Finder — создайте или выберите папку. Save запишет туда /.harness/.")
+                            description: Text("Нажмите + напротив «Проект», чтобы создать или выбрать папку. Save запишет туда /.harness/.")
                         )
                     }
                 }
@@ -104,7 +104,7 @@ struct ProjectSidebar: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    sidebarSection("Проект") {
+                    sidebarSection("Проект", addAction: { workspace.createProjectFromFinder() }) {
                         ForEach(workspace.projects) { project in
                             sidebarRow(
                                 title: project.name,
@@ -133,28 +133,32 @@ struct ProjectSidebar: View {
                 .padding(.bottom, 12)
             }
 
-            VStack(spacing: 10) {
-                connectionChip
-                Button {
-                    workspace.createProjectFromFinder()
-                } label: {
-                    Label("Новый проект", systemImage: "plus")
-                        .frame(maxWidth: .infinity)
-                }
-                .brGlassProminent()
-                .controlSize(.large)
-            }
-            .padding(14)
+            connectionChip
+                .padding(14)
         }
         .background(.ultraThinMaterial)
     }
 
-    private func sidebarSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+    private func sidebarSection<Content: View>(_ title: String, addAction: (() -> Void)? = nil, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title.uppercased())
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 8)
+            HStack(spacing: 4) {
+                Text(title.uppercased())
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                if let addAction {
+                    Spacer(minLength: 0)
+                    Button(action: addAction) {
+                        Image(systemName: "plus")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 18, height: 18)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Новый проект")
+                }
+            }
+            .padding(.horizontal, 8)
             content()
         }
     }
@@ -182,8 +186,10 @@ struct ProjectSidebar: View {
             .padding(.vertical, subtitle == nil ? 8 : 9)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
-            .background(selected ? Color.accentColor.opacity(0.22) : Color.clear, in: RoundedRectangle(cornerRadius: BR.sidebar, style: .continuous))
-            .brSurface(radius: BR.sidebar, interactive: selected, tint: selected ? .accentColor : nil, apply: selected)
+            .background(
+                selected ? Color.primary.opacity(0.08) : Color.clear,
+                in: RoundedRectangle(cornerRadius: BR.sidebar, style: .continuous)
+            )
         }
         .buttonStyle(FullRowButtonStyle())
     }

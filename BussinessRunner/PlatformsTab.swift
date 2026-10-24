@@ -10,16 +10,9 @@ struct PlatformsTab: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                if project.platforms.isEmpty {
-                    GlassCard {
-                        EmptyHint(text: "Добавьте платформу. Без неё тикеты не создаются и не принимаются.")
-                    }
-                }
-                LazyVGrid(columns: columns, spacing: 16) {
-                    ForEach($project.platforms) { $platform in
-                        platformCard($platform)
-                    }
+            LazyVGrid(columns: columns, spacing: 16) {
+                ForEach($project.platforms) { $platform in
+                    platformCard($platform)
                 }
             }
             .padding(28)
@@ -73,22 +66,16 @@ private struct PlatformCard: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity, minHeight: 220, alignment: .topLeading)
-        .modifier(SquareWhenClosed(enabled: !selectOpen && !forceExpandFramework))
-        .brSurface(radius: BR.card)
+        .aspectRatio(1, contentMode: .fit)
+        .background {
+            RoundedRectangle(cornerRadius: BR.card, style: .continuous)
+                .fill(.ultraThinMaterial)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: BR.card, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+        }
         .onPreferenceChange(BRSelectOpenPreference.self) { selectOpen = $0 }
         .zIndex(selectOpen || forceExpandFramework ? 8 : 0)
-    }
-}
-
-private struct SquareWhenClosed: ViewModifier {
-    var enabled: Bool
-
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        if enabled {
-            content.aspectRatio(1, contentMode: .fit)
-        } else {
-            content
-        }
     }
 }
