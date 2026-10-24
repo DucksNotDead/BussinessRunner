@@ -4,20 +4,20 @@ struct RootView: View {
     @EnvironmentObject private var workspace: Workspace
 
     var body: some View {
-        HStack(spacing: 0) {
-            ProjectSidebar()
-                .frame(width: 280)
-            ZStack {
-                CanvasBackdrop()
-                VStack(spacing: 0) {
-                    topBar
+        VStack(spacing: 0) {
+            ProjectTabBar()
+            HStack(spacing: 0) {
+                CanvasSidebar()
+                    .frame(width: 240)
+                ZStack {
+                    CanvasBackdrop()
                     if workspace.selectedProjectBinding != nil {
                         CanvasView()
                     } else {
                         ContentUnavailableView(
                             "Создайте проект",
                             systemImage: "square.dashed",
-                            description: Text("Нажмите + напротив «Проект», чтобы создать или выбрать папку. Save запишет туда /.harness/.")
+                            description: Text("Нажмите + на панели вкладок, чтобы создать или выбрать папку. Save запишет туда /.harness/.")
                         )
                     }
                 }
@@ -74,126 +74,58 @@ struct RootView: View {
         }
     }
 
-    private var topBar: some View {
-        HStack(spacing: 10) {
-            if let name = workspace.selectedProject?.name {
-                Text(name)
-                    .font(.headline)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .contentShape(Rectangle())
-    }
 }
 
-struct ProjectSidebar: View {
+struct CanvasSidebar: View {
     @EnvironmentObject private var workspace: Workspace
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 10) {
-                Image(systemName: "point.3.filled.connected.trianglepath.dotted")
-                    .font(.title3)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.tint)
-                Text("BussinessRunner")
-                    .font(.headline)
-            }
-            .padding(.horizontal, 18)
-            .padding(.top, 18)
-            .padding(.bottom, 12)
+            Text("Канва")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+                .padding(.bottom, 8)
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    sidebarSection("Проект", addAction: { workspace.createProjectFromFinder() }) {
-                        ForEach(workspace.projects) { project in
-                            sidebarRow(
-                                title: project.name,
-                                subtitle: project.repoPath.isEmpty ? "без репозитория" : URL(fileURLWithPath: project.repoPath).lastPathComponent,
-                                systemImage: "shippingbox.fill",
-                                selected: workspace.selectedProjectID == project.id
-                            ) {
-                                workspace.selectedProjectID = project.id
-                            }
-                        }
-                    }
-                    sidebarSection("Канва") {
-                        ForEach(CanvasTab.allCases) { tab in
-                            sidebarRow(
-                                title: tab.title,
-                                subtitle: nil,
-                                systemImage: tab.systemImage,
-                                selected: workspace.selectedTab == tab
-                            ) {
-                                workspace.selectedTab = tab
-                            }
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(CanvasTab.allCases) { tab in
+                        sidebarRow(
+                            title: tab.title,
+                            systemImage: tab.systemImage,
+                            selected: workspace.selectedTab == tab
+                        ) {
+                            workspace.selectedTab = tab
                         }
                     }
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 10)
                 .padding(.bottom, 12)
             }
-
-            connectionChip
-                .padding(14)
         }
         .background(.ultraThinMaterial)
     }
 
-    private func sidebarSection<Content: View>(_ title: String, addAction: (() -> Void)? = nil, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 4) {
-                Text(title.uppercased())
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                if let addAction {
-                    Spacer(minLength: 0)
-                    Button(action: addAction) {
-                        Image(systemName: "plus")
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 18, height: 18)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .brNoFocusRing()
-                    .help("Новый проект")
-                }
-            }
-            .padding(.horizontal, 8)
-            content()
-        }
-    }
-
-    private func sidebarRow(title: String, subtitle: String?, systemImage: String, selected: Bool, action: @escaping () -> Void) -> some View {
+    private func sidebarRow(title: String, systemImage: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 10) {
                 Capsule()
                     .fill(selected ? Color.accentColor.opacity(0.85) : Color.clear)
-                    .frame(width: 3, height: subtitle == nil ? 14 : 22)
+                    .frame(width: 3, height: 14)
                 Image(systemName: systemImage)
                     .font(.body)
                     .frame(width: 22)
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(selected ? .primary : .secondary)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(title)
-                        .font(.body.weight(selected ? .semibold : .regular))
-                    if let subtitle {
-                        Text(subtitle)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                }
+                Text(title)
+                    .font(.body.weight(selected ? .semibold : .regular))
                 Spacer(minLength: 0)
             }
             .foregroundStyle(selected ? .primary : .secondary)
             .padding(.leading, 7)
             .padding(.trailing, 10)
-            .padding(.vertical, subtitle == nil ? 8 : 9)
+            .padding(.vertical, 8)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
             .background {
@@ -205,26 +137,6 @@ struct ProjectSidebar: View {
         }
         .buttonStyle(.plain)
         .brNoFocusRing()
-    }
-
-    private var connectionChip: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(workspace.cursorSnapshot != nil ? Color.green : Color.secondary.opacity(0.45))
-                .frame(width: 8, height: 8)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(workspace.cursorSnapshot != nil ? "Cursor подключён" : "Нет сессии")
-                    .font(.caption.weight(.semibold))
-                if workspace.apiKeyPresent {
-                    Text(workspace.apiKeyMasked)
-                        .font(.caption2.monospaced())
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Spacer()
-        }
-        .padding(10)
-        .modifier(BRInset(radius: 14))
     }
 }
 

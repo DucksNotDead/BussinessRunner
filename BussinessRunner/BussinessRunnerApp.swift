@@ -45,6 +45,17 @@ struct BussinessRunnerApp: App {
                     workspace.createProjectFromFinder()
                 }
                 .keyboardShortcut("n", modifiers: .command)
+                Button("Новая вкладка") {
+                    workspace.createProjectFromFinder()
+                }
+                .keyboardShortcut("t", modifiers: .command)
+            }
+            CommandGroup(after: .newItem) {
+                Button("Закрыть вкладку") {
+                    workspace.closeSelectedProject()
+                }
+                .keyboardShortcut("w", modifiers: .command)
+                .disabled(workspace.selectedProjectID == nil)
             }
             CommandMenu("Harness") {
                 Button("Сохранить в /.harness/") {

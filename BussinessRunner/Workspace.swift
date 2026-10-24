@@ -130,6 +130,22 @@ final class Workspace: ObservableObject {
         persist()
     }
 
+    func closeProject(_ id: UUID) {
+        guard let index = projects.firstIndex(where: { $0.id == id }) else { return }
+        projects.remove(at: index)
+        if selectedProjectID == id {
+            let next = projects.indices.contains(index) ? projects[index] : projects.last
+            selectedProjectID = next?.id
+            editingProcessID = next.flatMap { $0.processes.first?.id }
+        }
+        persist()
+    }
+
+    func closeSelectedProject() {
+        guard let id = selectedProjectID else { return }
+        closeProject(id)
+    }
+
     func chooseRepo(for projectID: UUID) {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
