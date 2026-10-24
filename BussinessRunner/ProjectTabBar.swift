@@ -2,11 +2,10 @@ import SwiftUI
 
 struct ProjectTabBar: View {
     @EnvironmentObject private var workspace: Workspace
-    @Environment(\.colorScheme) private var scheme
     @State private var hoveredID: UUID?
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 3) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 3) {
                     ForEach(workspace.projects) { project in
@@ -41,37 +40,11 @@ struct ProjectTabBar: View {
                     .help("Новая вкладка проекта")
                 }
             }
-            Spacer(minLength: 8)
-            connectionDot
+            Spacer(minLength: 0)
         }
         .padding(.leading, 10)
         .padding(.trailing, 14)
         .frame(height: 44)
-        .background {
-            Rectangle()
-                .fill(.ultraThinMaterial)
-            Rectangle()
-                .fill(scheme == .dark ? Color.black.opacity(0.22) : Color.white.opacity(0.35))
-        }
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(Color.primary.opacity(0.08))
-                .frame(height: 1)
-        }
-    }
-
-    private var connectionDot: some View {
-        HStack(spacing: 6) {
-            Circle()
-                .fill(workspace.cursorSnapshot != nil ? Color.green : Color.secondary.opacity(0.45))
-                .frame(width: 7, height: 7)
-            if workspace.apiKeyPresent {
-                Text(workspace.apiKeyMasked)
-                    .font(.caption2.monospaced())
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .help(workspace.cursorSnapshot != nil ? "Cursor подключён" : "Нет сессии")
     }
 }
 

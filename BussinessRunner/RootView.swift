@@ -8,10 +8,10 @@ struct RootView: View {
         HStack(spacing: 0) {
             CanvasSidebar()
                 .frame(width: 240)
-            VStack(spacing: 0) {
-                ProjectTabBar()
-                ZStack {
-                    CanvasBackdrop()
+            ZStack {
+                CanvasBackdrop()
+                VStack(spacing: 0) {
+                    ProjectTabBar()
                     if let id = workspace.selectedProjectID, workspace.selectedProject != nil {
                         CanvasView()
                             .id(id)
